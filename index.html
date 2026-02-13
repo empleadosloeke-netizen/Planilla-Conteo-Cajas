@@ -1,594 +1,84 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro Códigos</title>
-  <style>
-    :root{
-      --bg:#0b1020;
-      --card:#111a33;
-      --card2:#0f1730;
-      --text:#eef2ff;
-      --muted:rgba(238,242,255,.68);
-      --line:rgba(255,255,255,.10);
-      --accent:#5eead4;
-      --danger:#fb7185;
-      --radius:18px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(94,234,212,.18), transparent 55%),
-                  radial-gradient(900px 500px at 90% 10%, rgba(99,102,241,.18), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-      min-height:100vh;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      padding:24px;
-    }
-    .wrap{width:min(1100px, 100%)}
-    .topbar{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:14px;
-    }
-    .title{
-      font-weight:700;
-      letter-spacing:.2px;
-      font-size:18px;
-      opacity:.95;
-    }
-    .tabs{
-      display:flex;
-      gap:8px;
-      background:rgba(255,255,255,.06);
-      padding:6px;
-      border-radius:999px;
-      border:1px solid var(--line);
-    }
-    .tab{
-      border:0;
-      background:transparent;
-      color:var(--muted);
-      padding:10px 14px;
-      border-radius:999px;
-      cursor:pointer;
-      font-weight:650;
-    }
-    .tab.active{
-      color:var(--text);
-      background:rgba(94,234,212,.16);
-      border:1px solid rgba(94,234,212,.28);
+// Code.gs  (Apps Script)
+// Pegar en tu proyecto Apps Script y desplegar como Web App (/exec)
+
+const SHEET_NAME = "Registros";
+
+const HEADERS = [
+  "FechaHora",
+  "Legajo",
+  "N° Orden",
+  "Sector",
+  "Cod Art",
+  "Pilas",
+  "Cjas x Pila",
+  "Cjas Sueltas",
+  "Codigos Cargados (Pestaña 1)"
+];
+
+function doGet() {
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, msg: "WebApp activa" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const sh = getSheet_();
+
+    const raw = (e && e.postData && e.postData.contents) ? e.postData.contents : "{}";
+    const data = JSON.parse(raw);
+
+    const ts = data.ts ? new Date(data.ts) : new Date();
+    const legajo = String(data.legajo || "").trim();
+    const codesJoined = Array.isArray(data.codes) ? data.codes.join(",") : "";
+
+    if (!legajo) {
+      return jsonOut_({ ok: false, error: "Falta legajo" });
     }
 
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:0 18px 60px rgba(0,0,0,.35);
-      overflow:hidden;
-    }
-    .cardHeader{
-      padding:16px 18px;
-      border-bottom:1px solid var(--line);
-      background:rgba(0,0,0,.15);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .cardHeader .hint{color:var(--muted); font-size:13px}
-    .cardBody{padding:18px}
+    const rows = Array.isArray(data.rows) ? data.rows : [];
 
-    .grid{
-      display:grid;
-      gap:14px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 860px){
-      .grid.two{grid-template-columns: 1.1fr .9fr}
+    if (rows.length === 0) {
+      sh.appendRow([ts, legajo, "", "", "", "", "", "", codesJoined]);
+      return jsonOut_({ ok: true, appended: 1, note: "Sin filas - solo legajo/codes" });
     }
 
-    label{
-      display:block;
-      font-size:13px;
-      color:var(--muted);
-      margin:0 0 6px 2px;
-    }
-    input, select{
-      width:100%;
-      padding:14px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(17,26,51,.65);
-      color:var(--text);
-      outline:none;
-      font-size:16px;
-    }
-    input::placeholder{color:rgba(238,242,255,.35)}
-    input:focus, select:focus{
-      border-color:rgba(94,234,212,.55);
-      box-shadow:0 0 0 4px rgba(94,234,212,.12);
-    }
-    .row{
-      display:grid;
-      gap:12px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 620px){
-      .row.three{grid-template-columns: 1fr 1fr 1fr}
-      .row.two{grid-template-columns: 1fr 1fr}
-    }
+    const values = rows.map(r => ([
+      ts,
+      legajo,
+      (r.orden === null || r.orden === undefined) ? "" : r.orden,
+      String(r.sector || ""),
+      String(r.codArt || ""),
+      String(r.pilas || ""),
+      String(r.cjasXPila || ""),
+      String(r.cjasSueltas || ""),
+      codesJoined
+    ]));
 
-    .btn{
-      border:0;
-      cursor:pointer;
-      padding:14px 16px;
-      border-radius:14px;
-      font-weight:750;
-      background:rgba(94,234,212,.18);
-      border:1px solid rgba(94,234,212,.35);
-      color:var(--text);
-    }
-    .btn:active{transform:translateY(1px)}
-    .btn.secondary{
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--line);
-      color:var(--text);
-    }
-    .msg{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.35;
-    }
-    .msg.error{color:var(--danger)}
-    .pill{
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid var(--line);
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.04);
-      white-space:nowrap;
-    }
+    sh.getRange(sh.getLastRow() + 1, 1, values.length, HEADERS.length).setValues(values);
 
-    /* Tabla de pestaña 2 */
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:rgba(17,26,51,.55);
-    }
-    thead th{
-      text-align:left;
-      font-size:12px;
-      color:var(--muted);
-      padding:12px 12px;
-      border-bottom:1px solid var(--line);
-      background:rgba(0,0,0,.18);
-    }
-    tbody td{
-      padding:12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      vertical-align:middle;
-    }
-    tbody tr:last-child td{border-bottom:0}
-    .mini{
-      font-size:12px;
-      color:var(--muted);
-    }
-    .right{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .fieldSmall{
-      width: 150px;
-      max-width: 48vw;
-    }
-    .fieldSmall input, .fieldSmall select{padding:12px 12px; font-size:15px}
-    .footerActions{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      margin-top:14px;
-      flex-wrap:wrap;
-    }
-  </style>
-</head>
+    return jsonOut_({ ok: true, appended: values.length });
 
-<body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="title">Registro de Códigos</div>
-      <div class="tabs" role="tablist" aria-label="Pestañas">
-        <button class="tab active" id="tab1Btn" type="button">1) Cargar</button>
-        <button class="tab" id="tab2Btn" type="button">2) Completar</button>
-      </div>
-    </div>
+  } catch (err) {
+    return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+}
 
-    <!-- PESTAÑA 1 -->
-    <section class="card" id="tab1">
-      <div class="cardHeader">
-        <div>
-          <div style="font-weight:750;">Pestaña 1 — Cargar datos</div>
-          <div class="hint">Legajo + 2 códigos numéricos. Luego “Siguiente”.</div>
-        </div>
-        <div class="pill" id="statusPill">Sin datos</div>
-      </div>
+function getSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) sh = ss.insertSheet(SHEET_NAME);
 
-      <div class="cardBody">
-        <div class="grid two">
-          <div>
-            <label for="legajo">Número de legajo</label>
-            <input id="legajo" inputmode="numeric" type="number" min="0" step="1" placeholder="Ej: 1234" />
-            <div class="msg" id="msg1"></div>
-          </div>
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(HEADERS);
+  } else {
+    const a1 = sh.getRange(1, 1).getValue();
+    if (!a1) sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  }
+  return sh;
+}
 
-          <div class="card" style="background:rgba(0,0,0,.10); border:1px solid var(--line);">
-            <div class="cardBody">
-              <div class="row two">
-                <div>
-                  <label for="cod1">Código 1</label>
-                  <input id="cod1" inputmode="numeric" type="number" min="0" step="1" placeholder="Ej: 505" />
-                </div>
-                <div>
-                  <label for="cod2">Código 2</label>
-                  <input id="cod2" inputmode="numeric" type="number" min="0" step="1" placeholder="Ej: 812" />
-                </div>
-              </div>
-
-              <div class="footerActions">
-                <button class="btn secondary" id="limpiarBtn" type="button">Limpiar</button>
-                <button class="btn" id="siguienteBtn" type="button">Siguiente</button>
-              </div>
-              <div class="msg" id="msg1b"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PESTAÑA 2 -->
-    <section class="card" id="tab2" style="display:none;">
-      <div class="cardHeader">
-        <div>
-          <div style="font-weight:750;">Pestaña 2 — Completar Pilas / Cajas</div>
-          <div class="hint">Se muestran SOLO los códigos ingresados, ordenados por N° Orden.</div>
-        </div>
-        <div class="pill" id="legajoPill">Legajo: —</div>
-      </div>
-
-      <div class="cardBody">
-        <div class="msg" id="msg2"></div>
-
-        <div style="overflow:auto; margin-top:12px;">
-          <table aria-label="Listado de códigos">
-            <thead>
-              <tr>
-                <th style="width:120px;">N° Orden</th>
-                <th style="width:220px;">Sector</th>
-                <th style="width:180px;">Cod Art</th>
-                <th style="text-align:right;">Pilas / Cjas x Pila / Cjas Sueltas</th>
-              </tr>
-            </thead>
-            <tbody id="tbody">
-              <!-- filas dinámicas -->
-            </tbody>
-          </table>
-        </div>
-
-        <div class="footerActions">
-          <button class="btn secondary" id="volverBtn" type="button">Volver</button>
-          <button class="btn" id="guardarLocalBtn" type="button">Guardar (local)</button>
-        </div>
-        <div class="msg mini">
-          * “Guardar (local)” lo deja en el navegador (localStorage). Si querés guardarlo en Google Sheet / Supabase, lo conectamos después.
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script>
-    // ==============================
-    // 1) MAPA (EDITABLE) DE CODIGOS
-    // ==============================
-    // Acá va tu planimetría: por cada Cod Art, definís N° Orden, Sector, Cod Art
-    // Ejemplo:
-    // "505": { orden: 1, sector: "A-01", codArt: 505 }
-    const MAP = {
-      // TODO: completame esto con tu planimetría
-      // "505": { orden: 1, sector: "Sector 1", codArt: 505 },
-      // "812": { orden: 2, sector: "Sector 2", codArt: 812 },
-    };
-
-    // ==============================
-    // Helpers
-    // ==============================
-    const $ = (id) => document.getElementById(id);
-
-    function onlyDigits(v){
-      if (v === null || v === undefined) return "";
-      return String(v).replace(/[^\d]/g, "");
-    }
-
-    function switchTab(n){
-      const tab1 = $("tab1");
-      const tab2 = $("tab2");
-      const b1 = $("tab1Btn");
-      const b2 = $("tab2Btn");
-
-      if(n === 1){
-        tab1.style.display = "";
-        tab2.style.display = "none";
-        b1.classList.add("active");
-        b2.classList.remove("active");
-      }else{
-        tab1.style.display = "none";
-        tab2.style.display = "";
-        b2.classList.add("active");
-        b1.classList.remove("active");
-      }
-    }
-
-    function buildSelect(min, max, selectedValue){
-      const sel = document.createElement("select");
-      const opt0 = document.createElement("option");
-      opt0.value = "";
-      opt0.textContent = "—";
-      sel.appendChild(opt0);
-
-      for(let i=min;i<=max;i++){
-        const opt = document.createElement("option");
-        opt.value = String(i);
-        opt.textContent = String(i);
-        if(String(i) === String(selectedValue)) opt.selected = true;
-        sel.appendChild(opt);
-      }
-      return sel;
-    }
-
-    function setStatus(){
-      const leg = onlyDigits($("legajo").value);
-      const c1 = onlyDigits($("cod1").value);
-      const c2 = onlyDigits($("cod2").value);
-      const cnt = [c1,c2].filter(Boolean).length;
-      $("statusPill").textContent = leg ? `Legajo ${leg} · ${cnt} código(s)` : "Sin datos";
-    }
-
-    // ==============================
-    // Estado
-    // ==============================
-    const STATE = {
-      legajo: "",
-      codes: [],    // códigos ingresados (strings)
-      rows: [],     // filas resultantes (ordenadas)
-      fills: {}     // por codArt: { pilas, cjasXPila, cjasSueltas }
-    };
-
-    // ==============================
-    // Pestaña 1: Validación + pasar a 2
-    // ==============================
-    function parseTab1(){
-      const legajo = onlyDigits($("legajo").value);
-      const cod1 = onlyDigits($("cod1").value);
-      const cod2 = onlyDigits($("cod2").value);
-
-      $("msg1").textContent = "";
-      $("msg1b").textContent = "";
-      $("msg1").classList.remove("error");
-      $("msg1b").classList.remove("error");
-
-      if(!legajo){
-        $("msg1").textContent = "Ingresá el número de legajo.";
-        $("msg1").classList.add("error");
-        return null;
-      }
-
-      const codes = [cod1, cod2].filter(Boolean);
-      if(codes.length === 0){
-        $("msg1b").textContent = "Ingresá al menos 1 código.";
-        $("msg1b").classList.add("error");
-        return null;
-      }
-
-      // únicos
-      const uniq = Array.from(new Set(codes));
-
-      // mapear a filas usando MAP
-      const rows = [];
-      const unknown = [];
-
-      for(const code of uniq){
-        if(MAP[code]){
-          rows.push({
-            orden: Number(MAP[code].orden),
-            sector: String(MAP[code].sector),
-            codArt: String(MAP[code].codArt ?? code)
-          });
-        }else{
-          // si no está mapeado, igual lo mostramos con orden grande para que quede al final
-          unknown.push(code);
-          rows.push({
-            orden: 999999,
-            sector: "SIN MAPEO",
-            codArt: String(code)
-          });
-        }
-      }
-
-      // ordenar por N° Orden
-      rows.sort((a,b) => a.orden - b.orden);
-
-      return { legajo, codes: uniq, rows, unknown };
-    }
-
-    function renderTab2(){
-      $("legajoPill").textContent = `Legajo: ${STATE.legajo || "—"}`;
-      const tbody = $("tbody");
-      tbody.innerHTML = "";
-
-      if(STATE.rows.length === 0){
-        $("msg2").textContent = "No hay códigos para mostrar.";
-        return;
-      }
-
-      // mensaje si hay sin mapeo
-      const hasUnknown = STATE.rows.some(r => r.sector === "SIN MAPEO");
-      $("msg2").textContent = hasUnknown
-        ? "Hay códigos sin mapeo (Sector = SIN MAPEO). Cuando me pases la planimetría los vinculamos a N° Orden y Sector."
-        : "";
-
-      for(const r of STATE.rows){
-        const tr = document.createElement("tr");
-
-        const tdOrden = document.createElement("td");
-        tdOrden.textContent = (r.orden === 999999) ? "—" : String(r.orden);
-
-        const tdSector = document.createElement("td");
-        tdSector.textContent = r.sector;
-
-        const tdCod = document.createElement("td");
-        tdCod.textContent = r.codArt;
-
-        const tdRight = document.createElement("td");
-        tdRight.style.textAlign = "right";
-
-        const wrap = document.createElement("div");
-        wrap.className = "right";
-
-        // Pilas (1-30)
-        const box1 = document.createElement("div");
-        box1.className = "fieldSmall";
-        const lab1 = document.createElement("label");
-        lab1.textContent = "Pilas";
-        lab1.style.margin = "0 0 6px 2px";
-        const selPilas = buildSelect(1, 30, (STATE.fills[r.codArt]?.pilas ?? ""));
-        selPilas.addEventListener("change", () => {
-          STATE.fills[r.codArt] = STATE.fills[r.codArt] || {};
-          STATE.fills[r.codArt].pilas = selPilas.value;
-        });
-        box1.appendChild(lab1);
-        box1.appendChild(selPilas);
-
-        // Cjas x Pila (1-10)
-        const box2 = document.createElement("div");
-        box2.className = "fieldSmall";
-        const lab2 = document.createElement("label");
-        lab2.textContent = "Cjas x Pila";
-        lab2.style.margin = "0 0 6px 2px";
-        const selCxp = buildSelect(1, 10, (STATE.fills[r.codArt]?.cjasXPila ?? ""));
-        selCxp.addEventListener("change", () => {
-          STATE.fills[r.codArt] = STATE.fills[r.codArt] || {};
-          STATE.fills[r.codArt].cjasXPila = selCxp.value;
-        });
-        box2.appendChild(lab2);
-        box2.appendChild(selCxp);
-
-        // Cjas Sueltas (input)
-        const box3 = document.createElement("div");
-        box3.className = "fieldSmall";
-        const lab3 = document.createElement("label");
-        lab3.textContent = "Cjas Sueltas";
-        lab3.style.margin = "0 0 6px 2px";
-        const inp = document.createElement("input");
-        inp.type = "number";
-        inp.inputMode = "numeric";
-        inp.min = "0";
-        inp.step = "1";
-        inp.placeholder = "0";
-        inp.value = (STATE.fills[r.codArt]?.cjasSueltas ?? "");
-        inp.addEventListener("input", () => {
-          STATE.fills[r.codArt] = STATE.fills[r.codArt] || {};
-          STATE.fills[r.codArt].cjasSueltas = onlyDigits(inp.value);
-        });
-        box3.appendChild(lab3);
-        box3.appendChild(inp);
-
-        wrap.appendChild(box1);
-        wrap.appendChild(box2);
-        wrap.appendChild(box3);
-        tdRight.appendChild(wrap);
-
-        tr.appendChild(tdOrden);
-        tr.appendChild(tdSector);
-        tr.appendChild(tdCod);
-        tr.appendChild(tdRight);
-
-        tbody.appendChild(tr);
-      }
-    }
-
-    function saveLocal(){
-      const payload = {
-        ts: new Date().toISOString(),
-        legajo: STATE.legajo,
-        codes: STATE.codes,
-        rows: STATE.rows,
-        fills: STATE.fills
-      };
-      localStorage.setItem("registro_codigos_v1", JSON.stringify(payload));
-      alert("Guardado en el navegador (local).");
-    }
-
-    function clearAll(){
-      $("legajo").value = "";
-      $("cod1").value = "";
-      $("cod2").value = "";
-      $("msg1").textContent = "";
-      $("msg1b").textContent = "";
-      STATE.legajo = "";
-      STATE.codes = [];
-      STATE.rows = [];
-      STATE.fills = {};
-      setStatus();
-    }
-
-    // ==============================
-    // Eventos
-    // ==============================
-    $("tab1Btn").addEventListener("click", () => switchTab(1));
-    $("tab2Btn").addEventListener("click", () => switchTab(2));
-
-    $("legajo").addEventListener("input", setStatus);
-    $("cod1").addEventListener("input", setStatus);
-    $("cod2").addEventListener("input", setStatus);
-
-    $("limpiarBtn").addEventListener("click", clearAll);
-
-    $("siguienteBtn").addEventListener("click", () => {
-      const parsed = parseTab1();
-      if(!parsed) return;
-
-      STATE.legajo = parsed.legajo;
-      STATE.codes = parsed.codes;
-      STATE.rows = parsed.rows;
-
-      // init fills si no existen
-      for(const r of STATE.rows){
-        if(!STATE.fills[r.codArt]) STATE.fills[r.codArt] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
-      }
-
-      renderTab2();
-      switchTab(2);
-    });
-
-    $("volverBtn").addEventListener("click", () => switchTab(1));
-    $("guardarLocalBtn").addEventListener("click", saveLocal);
-
-    // boot
-    setStatus();
-  </script>
-</body>
-</html>
+function jsonOut_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
