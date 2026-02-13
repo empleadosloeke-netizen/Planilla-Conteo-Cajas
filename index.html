@@ -1,84 +1,580 @@
-// Code.gs  (Apps Script)
-// Pegar en tu proyecto Apps Script y desplegar como Web App (/exec)
-
-const SHEET_NAME = "Registros";
-
-const HEADERS = [
-  "FechaHora",
-  "Legajo",
-  "N° Orden",
-  "Sector",
-  "Cod Art",
-  "Pilas",
-  "Cjas x Pila",
-  "Cjas Sueltas",
-  "Codigos Cargados (Pestaña 1)"
-];
-
-function doGet() {
-  return ContentService.createTextOutput(JSON.stringify({ ok: true, msg: "WebApp activa" }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    const sh = getSheet_();
-
-    const raw = (e && e.postData && e.postData.contents) ? e.postData.contents : "{}";
-    const data = JSON.parse(raw);
-
-    const ts = data.ts ? new Date(data.ts) : new Date();
-    const legajo = String(data.legajo || "").trim();
-    const codesJoined = Array.isArray(data.codes) ? data.codes.join(",") : "";
-
-    if (!legajo) {
-      return jsonOut_({ ok: false, error: "Falta legajo" });
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro Códigos</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --text:#eef2ff;
+      --muted:rgba(238,242,255,.68);
+      --line:rgba(255,255,255,.10);
+      --accent:#5eead4;
+      --danger:#fb7185;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(94,234,212,.18), transparent 55%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(99,102,241,.18), transparent 55%),
+                  #0b1020;
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:24px;
+    }
+    .wrap{width:min(1100px, 100%)}
+    .topbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:14px;
+    }
+    .title{font-weight:800; letter-spacing:.2px; font-size:18px; opacity:.95}
+    .tabs{
+      display:flex; gap:8px;
+      background:rgba(255,255,255,.06);
+      padding:6px;
+      border-radius:999px;
+      border:1px solid var(--line);
+    }
+    .tab{
+      border:0; background:transparent; color:var(--muted);
+      padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:750;
+    }
+    .tab.active{
+      color:var(--text);
+      background:rgba(94,234,212,.16);
+      border:1px solid rgba(94,234,212,.28);
     }
 
-    const rows = Array.isArray(data.rows) ? data.rows : [];
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .cardHeader{
+      padding:16px 18px;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,.15);
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .cardHeader .hint{color:var(--muted); font-size:13px}
+    .cardBody{padding:18px}
 
-    if (rows.length === 0) {
-      sh.appendRow([ts, legajo, "", "", "", "", "", "", codesJoined]);
-      return jsonOut_({ ok: true, appended: 1, note: "Sin filas - solo legajo/codes" });
+    .grid{display:grid; gap:14px; grid-template-columns: 1fr;}
+    @media (min-width: 860px){ .grid.two{grid-template-columns: 1.1fr .9fr} }
+
+    label{display:block; font-size:13px; color:var(--muted); margin:0 0 6px 2px}
+    input, select{
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(17,26,51,.65);
+      color:var(--text);
+      outline:none;
+      font-size:16px;
+    }
+    input::placeholder{color:rgba(238,242,255,.35)}
+    input:focus, select:focus{
+      border-color:rgba(94,234,212,.55);
+      box-shadow:0 0 0 4px rgba(94,234,212,.12);
     }
 
-    const values = rows.map(r => ([
-      ts,
-      legajo,
-      (r.orden === null || r.orden === undefined) ? "" : r.orden,
-      String(r.sector || ""),
-      String(r.codArt || ""),
-      String(r.pilas || ""),
-      String(r.cjasXPila || ""),
-      String(r.cjasSueltas || ""),
-      codesJoined
-    ]));
+    .row{display:grid; gap:12px; grid-template-columns: 1fr;}
+    @media (min-width: 620px){ .row.two{grid-template-columns: 1fr 1fr} }
 
-    sh.getRange(sh.getLastRow() + 1, 1, values.length, HEADERS.length).setValues(values);
+    .btn{
+      border:0; cursor:pointer;
+      padding:14px 16px; border-radius:14px;
+      font-weight:850;
+      background:rgba(94,234,212,.18);
+      border:1px solid rgba(94,234,212,.35);
+      color:var(--text);
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      color:var(--text);
+    }
+    .btn.danger{
+      background:rgba(251,113,133,.14);
+      border:1px solid rgba(251,113,133,.35);
+    }
 
-    return jsonOut_({ ok: true, appended: values.length });
+    .pill{
+      font-size:12px; color:var(--muted);
+      border:1px solid var(--line);
+      padding:6px 10px; border-radius:999px;
+      background:rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+    .msg{margin-top:10px; color:var(--muted); font-size:13px; line-height:1.35}
+    .msg.error{color:var(--danger)}
+    .msg.ok{color:var(--accent)}
+    .mini{font-size:12px; color:var(--muted)}
 
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) });
-  }
-}
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(17,26,51,.55);
+    }
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:var(--muted);
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+    }
+    tbody td{
+      padding:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      vertical-align:middle;
+    }
+    tbody tr:last-child td{border-bottom:0}
 
-function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) sh = ss.insertSheet(SHEET_NAME);
+    .right{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .fieldSmall{width:150px; max-width:48vw}
+    .fieldSmall input, .fieldSmall select{padding:12px 12px; font-size:15px}
 
-  if (sh.getLastRow() === 0) {
-    sh.appendRow(HEADERS);
-  } else {
-    const a1 = sh.getRange(1, 1).getValue();
-    if (!a1) sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  }
-  return sh;
-}
+    .footerActions{
+      display:flex; gap:10px;
+      justify-content:flex-end;
+      margin-top:14px; flex-wrap:wrap;
+    }
+  </style>
+</head>
 
-function jsonOut_(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">Registro de Códigos</div>
+      <div class="tabs" role="tablist" aria-label="Pestañas">
+        <button class="tab active" id="tab1Btn" type="button">1) Cargar</button>
+        <button class="tab" id="tab2Btn" type="button">2) Completar</button>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 1 -->
+    <section class="card" id="tab1">
+      <div class="cardHeader">
+        <div>
+          <div style="font-weight:850;">Pestaña 1 — Cargar datos</div>
+          <div class="hint">Legajo + 2 códigos (permiten letras y ceros a la izquierda). Luego “Siguiente”.</div>
+        </div>
+        <div class="pill" id="statusPill">Sin datos</div>
+      </div>
+
+      <div class="cardBody">
+        <div class="grid two">
+          <div>
+            <label for="legajo">Número de legajo</label>
+            <input id="legajo" inputmode="numeric" type="number" min="0" step="1" placeholder="Ej: 1234" />
+            <div class="msg" id="msg1"></div>
+          </div>
+
+          <div class="card" style="background:rgba(0,0,0,.10); border:1px solid var(--line);">
+            <div class="cardBody">
+              <div class="row two">
+                <div>
+                  <label for="cod1">Código 1</label>
+                  <input id="cod1" type="text" placeholder="Ej: 502 / 066 / 607E" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="cod2">Código 2</label>
+                  <input id="cod2" type="text" placeholder="Ej: 321 / 508 / 607E" autocomplete="off" />
+                </div>
+              </div>
+
+              <div class="footerActions">
+                <button class="btn secondary" id="limpiarBtn" type="button">Limpiar</button>
+                <button class="btn" id="siguienteBtn" type="button">Siguiente</button>
+              </div>
+              <div class="msg" id="msg1b"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 2 -->
+    <section class="card" id="tab2" style="display:none;">
+      <div class="cardHeader">
+        <div>
+          <div style="font-weight:850;">Pestaña 2 — Completar Pilas / Cajas</div>
+          <div class="hint">Se muestran SOLO los códigos ingresados (si un código tiene varias ubicaciones, aparecen varias filas).</div>
+        </div>
+        <div class="pill" id="legajoPill">Legajo: —</div>
+      </div>
+
+      <div class="cardBody">
+        <div class="msg" id="msg2"></div>
+
+        <div style="overflow:auto; margin-top:12px;">
+          <table aria-label="Listado de códigos">
+            <thead>
+              <tr>
+                <th style="width:120px;">N° Orden</th>
+                <th style="width:220px;">Sector</th>
+                <th style="width:180px;">Cod Art</th>
+                <th style="text-align:right;">Pilas / Cjas x Pila / Cjas Sueltas</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="footerActions">
+          <button class="btn secondary" id="volverBtn" type="button">Volver</button>
+          <button class="btn secondary" id="guardarLocalBtn" type="button">Guardar (local)</button>
+          <button class="btn" id="enviarSheetBtn" type="button">Enviar a Google Sheet</button>
+          <button class="btn danger" id="resetFillsBtn" type="button">Reset Cantidades</button>
+        </div>
+
+        <div class="msg mini">
+          * En GitHub Pages, el envío se hace igual aunque el navegador a veces no deja leer la respuesta (CORS).
+        </div>
+        <div class="msg" id="msgSend"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ==========================================
+    // URL DEL WEB APP (TU LINK)
+    // ==========================================
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfh9xaVqS-POGY1lB4WJmn_MWhRkoEN1YL8g3SQ6dezMJoMcGGXEjtvs5xghHZM41U/exec";
+
+    // ==========================================
+    // MAPA DESDE "Planimetria Virgilio.xlsx"
+    // code -> [{orden, sector, codArt}, ...]
+    // ==========================================
+    const MAP = {"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden":2,"sector":"A02","codArt":"502"},{"orden":3,"sector":"A03","codArt":"502"},{"orden":4,"sector":"A04","codArt":"502"},{"orden":6,"sector":"A06","codArt":"502"},{"orden":7,"sector":"A07","codArt":"502"},{"orden":8,"sector":"A08","codArt":"502"},{"orden":9,"sector":"A09","codArt":"502"}],"321":[{"orden":5,"sector":"A05","codArt":"321"}],"501":[{"orden":10,"sector":"A10","codArt":"501"},{"orden":11,"sector":"A11","codArt":"501"},{"orden":12,"sector":"A12","codArt":"501"},{"orden":13,"sector":"A13","codArt":"501"},{"orden":14,"sector":"A14","codArt":"501"},{"orden":15,"sector":"A15","codArt":"501"},{"orden":16,"sector":"A16","codArt":"501"},{"orden":17,"sector":"A17","codArt":"501"},{"orden":18,"sector":"A18","codArt":"501"},{"orden":19,"sector":"A19","codArt":"501"},{"orden":20,"sector":"A20","codArt":"501"},{"orden":21,"sector":"A21","codArt":"501"},{"orden":22,"sector":"A22","codArt":"501"},{"orden":23,"sector":"A23","codArt":"501"},{"orden":24,"sector":"A24","codArt":"501"},{"orden":25,"sector":"A25","codArt":"501"},{"orden":26,"sector":"A26","codArt":"501"},{"orden":27,"sector":"A27","codArt":"501"},{"orden":28,"sector":"A28","codArt":"501"},{"orden":29,"sector":"A29","codArt":"501"},{"orden":30,"sector":"A30","codArt":"501"},{"orden":31,"sector":"A31","codArt":"501"},{"orden":32,"sector":"A32","codArt":"501"},{"orden":33,"sector":"A33","codArt":"501"},{"orden":34,"sector":"A34","codArt":"501"},{"orden":35,"sector":"A35","codArt":"501"},{"orden":36,"sector":"A36","codArt":"501"},{"orden":37,"sector":"A37","codArt":"501"},{"orden":38,"sector":"A38","codArt":"501"},{"orden":39,"sector":"A39","codArt":"501"},{"orden":40,"sector":"A40","codArt":"501"},{"orden":41,"sector":"A41","codArt":"501"},{"orden":42,"sector":"A42","codArt":"501"},{"orden":43,"sector":"A43","codArt":"501"},{"orden":44,"sector":"A44","codArt":"501"},{"orden":45,"sector":"A45","codArt":"501"},{"orden":46,"sector":"A46","codArt":"501"},{"orden":47,"sector":"A47","codArt":"501"},{"orden":48,"sector":"A48","codArt":"501"},{"orden":49,"sector":"A49","codArt":"501"},{"orden":50,"sector":"A50","codArt":"501"},{"orden":51,"sector":"A51","codArt":"501"},{"orden":52,"sector":"A52","codArt":"501"},{"orden":53,"sector":"A53","codArt":"501"},{"orden":54,"sector":"A54","codArt":"501"},{"orden":55,"sector":"A55","codArt":"501"},{"orden":56,"sector":"A56","codArt":"501"},{"orden":57,"sector":"A57","codArt":"501"},{"orden":58,"sector":"A58","codArt":"501"},{"orden":59,"sector":"A59","codArt":"501"},{"orden":60,"sector":"A60","codArt":"501"},{"orden":61,"sector":"A61","codArt":"501"},{"orden":62,"sector":"A62","codArt":"501"},{"orden":63,"sector":"A63","codArt":"501"},{"orden":64,"sector":"A64","codArt":"501"},{"orden":65,"sector":"A65","codArt":"501"},{"orden":66,"sector":"A66","codArt":"501"},{"orden":67,"sector":"A67","codArt":"501"},{"orden":68,"sector":"A68","codArt":"501"},{"orden":69,"sector":"A69","codArt":"501"},{"orden":70,"sector":"A70","codArt":"501"}],"504":[{"orden":71,"sector":"B01","codArt":"504"},{"orden":72,"sector":"B02","codArt":"504"},{"orden":73,"sector":"B03","codArt":"504"},{"orden":74,"sector":"B04","codArt":"504"},{"orden":75,"sector":"B05","codArt":"504"},{"orden":76,"sector":"B06","codArt":"504"},{"orden":77,"sector":"B07","codArt":"504"},{"orden":78,"sector":"B08","codArt":"504"},{"orden":79,"sector":"B09","codArt":"504"},{"orden":80,"sector":"B10","codArt":"504"},{"orden":81,"sector":"B11","codArt":"504"},{"orden":82,"sector":"B12","codArt":"504"},{"orden":83,"sector":"B13","codArt":"504"},{"orden":84,"sector":"B14","codArt":"504"},{"orden":85,"sector":"B15","codArt":"504"},{"orden":86,"sector":"B16","codArt":"504"},{"orden":87,"sector":"B17","codArt":"504"},{"orden":88,"sector":"B18","codArt":"504"},{"orden":89,"sector":"B19","codArt":"504"},{"orden":90,"sector":"B20","codArt":"504"},{"orden":91,"sector":"B21","codArt":"504"},{"orden":92,"sector":"B22","codArt":"504"},{"orden":93,"sector":"B23","codArt":"504"},{"orden":94,"sector":"B24","codArt":"504"},{"orden":95,"sector":"B25","codArt":"504"},{"orden":96,"sector":"B26","codArt":"504"},{"orden":97,"sector":"B27","codArt":"504"},{"orden":98,"sector":"B28","codArt":"504"},{"orden":99,"sector":"B29","codArt":"504"},{"orden":100,"sector":"B30","codArt":"504"},{"orden":101,"sector":"B31","codArt":"504"},{"orden":102,"sector":"B32","codArt":"504"},{"orden":103,"sector":"B33","codArt":"504"},{"orden":104,"sector":"B34","codArt":"504"},{"orden":105,"sector":"B35","codArt":"504"},{"orden":106,"sector":"B36","codArt":"504"},{"orden":107,"sector":"B37","codArt":"504"},{"orden":108,"sector":"B38","codArt":"504"},{"orden":109,"sector":"B39","codArt":"504"},{"orden":110,"sector":"B40","codArt":"504"},{"orden":111,"sector":"B41","codArt":"504"},{"orden":112,"sector":"B42","codArt":"504"},{"orden":113,"sector":"B43","codArt":"504"},{"orden":114,"sector":"B44","codArt":"504"},{"orden":115,"sector":"B45","codArt":"504"},{"orden":116,"sector":"B46","codArt":"504"},{"orden":117,"sector":"B47","codArt":"504"},{"orden":118,"sector":"B48","codArt":"504"},{"orden":119,"sector":"B49","codArt":"504"},{"orden":120,"sector":"B50","codArt":"504"},{"orden":121,"sector":"B51","codArt":"504"},{"orden":122,"sector":"B52","codArt":"504"},{"orden":123,"sector":"B53","codArt":"504"},{"orden":124,"sector":"B54","codArt":"504"},{"orden":125,"sector":"B55","codArt":"504"},{"orden":126,"sector":"B56","codArt":"504"},{"orden":127,"sector":"B57","codArt":"504"},{"orden":128,"sector":"B58","codArt":"504"},{"orden":129,"sector":"B59","codArt":"504"},{"orden":130,"sector":"B60","codArt":"504"}],"506":[{"orden":131,"sector":"C01","codArt":"506"}],"323":[{"orden":132,"sector":"C02","codArt":"323"}],"607E":[{"orden":133,"sector":"C03","codArt":"607E"}],"557":[{"orden":134,"sector":"C04","codArt":"557"}],"066":[{"orden":135,"sector":"C05","codArt":"066"}],"565":[{"orden":136,"sector":"C06","codArt":"565"}],"558":[{"orden":137,"sector":"C07","codArt":"558"}],"248":[{"orden":138,"sector":"C08","codArt":"248"}],"332":[{"orden":139,"sector":"C09","codArt":"332"}],"338":[{"orden":140,"sector":"C10","codArt":"338"}],"500":[{"orden":141,"sector":"C11","codArt":"500"}],"395":[{"orden":142,"sector":"C12","codArt":"395"}],"393":[{"orden":143,"sector":"C13","codArt":"393"}],"394":[{"orden":144,"sector":"C14","codArt":"394"}],"508":[{"orden":145,"sector":"C15","codArt":"508"}],"518":[{"orden":146,"sector":"C16","codArt":"518"}],"519":[{"orden":147,"sector":"C17","codArt":"519"}],"521":[{"orden":148,"sector":"C18","codArt":"521"}],"526":[{"orden":149,"sector":"C19","codArt":"526"}],"530":[{"orden":150,"sector":"C20","codArt":"530"}],"531":[{"orden":151,"sector":"C21","codArt":"531"}],"532":[{"orden":152,"sector":"C22","codArt":"532"}],"533":[{"orden":153,"sector":"C23","codArt":"533"}],"534":[{"orden":154,"sector":"C24","codArt":"534"}],"535":[{"orden":155,"sector":"C25","codArt":"535"}],"536":[{"orden":156,"sector":"C26","codArt":"536"}],"537":[{"orden":157,"sector":"C27","codArt":"537"}],"538":[{"orden":158,"sector":"C28","codArt":"538"}],"539":[{"orden":159,"sector":"C29","codArt":"539"}],"540":[{"orden":160,"sector":"C30","codArt":"540"}],"541":[{"orden":161,"sector":"C31","codArt":"541"}],"542":[{"orden":162,"sector":"C32","codArt":"542"}],"543":[{"orden":163,"sector":"C33","codArt":"543"}],"544":[{"orden":164,"sector":"C34","codArt":"544"}],"545":[{"orden":165,"sector":"C35","codArt":"545"}],"546":[{"orden":166,"sector":"C36","codArt":"546"}],"547":[{"orden":167,"sector":"C37","codArt":"547"}],"548":[{"orden":168,"sector":"C38","codArt":"548"}],"549":[{"orden":169,"sector":"C39","codArt":"549"}],"550":[{"orden":170,"sector":"C40","codArt":"550"}],"551":[{"orden":171,"sector":"C41","codArt":"551"}],"552":[{"orden":172,"sector":"C42","codArt":"552"}],"553":[{"orden":173,"sector":"C43","codArt":"553"}],"554":[{"orden":174,"sector":"C44","codArt":"554"}],"555":[{"orden":175,"sector":"C45","codArt":"555"}],"556":[{"orden":176,"sector":"C46","codArt":"556"}],"559":[{"orden":177,"sector":"C47","codArt":"559"}],"560":[{"orden":178,"sector":"C48","codArt":"560"}],"561":[{"orden":179,"sector":"C49","codArt":"561"}],"562":[{"orden":180,"sector":"C50","codArt":"562"}],"563":[{"orden":181,"sector":"C51","codArt":"563"}],"564":[{"orden":182,"sector":"C52","codArt":"564"}],"566":[{"orden":183,"sector":"C53","codArt":"566"}],"567":[{"orden":184,"sector":"C54","codArt":"567"}],"568":[{"orden":185,"sector":"C55","codArt":"568"}],"569":[{"orden":186,"sector":"C56","codArt":"569"}],"570":[{"orden":187,"sector":"C57","codArt":"570"}],"571":[{"orden":188,"sector":"C58","codArt":"571"}],"572":[{"orden":189,"sector":"C59","codArt":"572"}],"573":[{"orden":190,"sector":"C60","codArt":"573"}],"574":[{"orden":191,"sector":"C61","codArt":"574"}],"575":[{"orden":192,"sector":"C62","codArt":"575"}],"576":[{"orden":193,"sector":"C63","codArt":"576"}],"577":[{"orden":194,"sector":"C64","codArt":"577"}],"578":[{"orden":195,"sector":"C65","codArt":"578"}],"579":[{"orden":196,"sector":"C66","codArt":"579"}],"580":[{"orden":197,"sector":"C67","codArt":"580"}],"581":[{"orden":198,"sector":"C68","codArt":"581"}],"582":[{"orden":199,"sector":"C69","codArt":"582"}],"583":[{"orden":200,"sector":"C70","codArt":"583"}],"584":[{"orden":201,"sector":"C71","codArt":"584"}],"585":[{"orden":202,"sector":"C72","codArt":"585"}],"586":[{"orden":203,"sector":"C73","codArt":"586"}],"587":[{"orden":204,"sector":"C74","codArt":"587"}],"588":[{"orden":205,"sector":"C75","codArt":"588"}],"589":[{"orden":206,"sector":"C76","codArt":"589"}],"590":[{"orden":207,"sector":"C77","codArt":"590"}],"591":[{"orden":208,"sector":"C78","codArt":"591"}],"592":[{"orden":209,"sector":"C79","codArt":"592"}],"593":[{"orden":210,"sector":"C80","codArt":"593"}],"594":[{"orden":211,"sector":"C81","codArt":"594"}],"595":[{"orden":212,"sector":"C82","codArt":"595"}],"596":[{"orden":213,"sector":"C83","codArt":"596"}],"597":[{"orden":214,"sector":"C84","codArt":"597"}],"598":[{"orden":215,"sector":"C85","codArt":"598"}],"599":[{"orden":216,"sector":"C86","codArt":"599"}],"600":[{"orden":217,"sector":"C87","codArt":"600"}],"601":[{"orden":218,"sector":"C88","codArt":"601"}],"602":[{"orden":219,"sector":"C89","codArt":"602"}],"603":[{"orden":220,"sector":"C90","codArt":"603"}],"604":[{"orden":221,"sector":"C91","codArt":"604"}],"605":[{"orden":222,"sector":"C92","codArt":"605"}],"606":[{"orden":223,"sector":"C93","codArt":"606"}],"607":[{"orden":224,"sector":"C94","codArt":"607"}],"608":[{"orden":225,"sector":"C95","codArt":"608"}],"609":[{"orden":226,"sector":"C96","codArt":"609"}],"610":[{"orden":227,"sector":"C97","codArt":"610"}],"611":[{"orden":228,"sector":"C98","codArt":"611"}],"612":[{"orden":229,"sector":"C99","codArt":"612"}],"613":[{"orden":230,"sector":"C100","codArt":"613"}],"614":[{"orden":231,"sector":"C101","codArt":"614"}],"615":[{"orden":232,"sector":"C102","codArt":"615"}],"616":[{"orden":233,"sector":"C103","codArt":"616"}],"617":[{"orden":234,"sector":"C104","codArt":"617"}],"618":[{"orden":235,"sector":"C105","codArt":"618"}],"619":[{"orden":236,"sector":"C106","codArt":"619"}],"620":[{"orden":237,"sector":"C107","codArt":"620"}],"621":[{"orden":238,"sector":"C108","codArt":"621"}],"622":[{"orden":239,"sector":"C109","codArt":"622"}],"623":[{"orden":240,"sector":"C110","codArt":"623"}],"624":[{"orden":241,"sector":"C111","codArt":"624"}],"625":[{"orden":242,"sector":"C112","codArt":"625"}],"626":[{"orden":243,"sector":"C113","codArt":"626"}],"627":[{"orden":244,"sector":"C114","codArt":"627"}],"628":[{"orden":245,"sector":"C115","codArt":"628"}],"629":[{"orden":246,"sector":"C116","codArt":"629"}],"630":[{"orden":247,"sector":"C117","codArt":"630"}],"631":[{"orden":248,"sector":"C118","codArt":"631"}],"632":[{"orden":249,"sector":"C119","codArt":"632"}],"633":[{"orden":250,"sector":"C120","codArt":"633"}],"634":[{"orden":251,"sector":"C121","codArt":"634"}],"635":[{"orden":252,"sector":"C122","codArt":"635"}],"636":[{"orden":253,"sector":"C123","codArt":"636"}],"637":[{"orden":254,"sector":"C124","codArt":"637"}],"638":[{"orden":255,"sector":"C125","codArt":"638"}],"639":[{"orden":256,"sector":"C126","codArt":"639"}],"640":[{"orden":257,"sector":"C127","codArt":"640"}],"641":[{"orden":258,"sector":"C128","codArt":"641"}],"642":[{"orden":259,"sector":"C129","codArt":"642"}],"643":[{"orden":260,"sector":"C130","codArt":"643"}],"644":[{"orden":261,"sector":"C131","codArt":"644"}],"645":[{"orden":262,"sector":"C132","codArt":"645"}],"646":[{"orden":263,"sector":"C133","codArt":"646"}],"647":[{"orden":264,"sector":"C134","codArt":"647"}],"648":[{"orden":265,"sector":"C135","codArt":"648"}],"649":[{"orden":266,"sector":"C136","codArt":"649"}],"650":[{"orden":267,"sector":"C137","codArt":"650"}],"651":[{"orden":268,"sector":"C138","codArt":"651"}],"652":[{"orden":269,"sector":"C139","codArt":"652"}],"653":[{"orden":270,"sector":"C140","codArt":"653"}],"654":[{"orden":271,"sector":"C141","codArt":"654"}],"655":[{"orden":272,"sector":"C142","codArt":"655"}],"656":[{"orden":273,"sector":"C143","codArt":"656"}],"657":[{"orden":274,"sector":"C144","codArt":"657"}],"658":[{"orden":275,"sector":"C145","codArt":"658"}],"659":[{"orden":276,"sector":"C146","codArt":"659"}],"660":[{"orden":277,"sector":"C147","codArt":"660"}],"661":[{"orden":278,"sector":"C148","codArt":"661"}],"662":[{"orden":279,"sector":"C149","codArt":"662"}],"663":[{"orden":280,"sector":"C150","codArt":"663"}],"664":[{"orden":281,"sector":"C151","codArt":"664"}],"665":[{"orden":282,"sector":"C152","codArt":"665"}],"666":[{"orden":283,"sector":"C153","codArt":"666"}],"667":[{"orden":284,"sector":"C154","codArt":"667"}],"668":[{"orden":285,"sector":"C155","codArt":"668"}],"669":[{"orden":286,"sector":"C156","codArt":"669"}],"670":[{"orden":287,"sector":"C157","codArt":"670"}],"671":[{"orden":288,"sector":"C158","codArt":"671"}],"672":[{"orden":289,"sector":"C159","codArt":"672"}],"673":[{"orden":290,"sector":"C160","codArt":"673"}],"674":[{"orden":291,"sector":"C161","codArt":"674"}],"675":[{"orden":292,"sector":"C162","codArt":"675"}],"676":[{"orden":293,"sector":"C163","codArt":"676"}],"677":[{"orden":294,"sector":"C164","codArt":"677"}],"678":[{"orden":295,"sector":"C165","codArt":"678"}],"679":[{"orden":296,"sector":"C166","codArt":"679"}],"680":[{"orden":297,"sector":"C167","codArt":"680"}],"681":[{"orden":298,"sector":"C168","codArt":"681"}],"682":[{"orden":299,"sector":"C169","codArt":"682"}],"683":[{"orden":300,"sector":"C170","codArt":"683"}],"684":[{"orden":301,"sector":"C171","codArt":"684"}],"685":[{"orden":302,"sector":"C172","codArt":"685"}],"686":[{"orden":303,"sector":"C173","codArt":"686"}],"687":[{"orden":304,"sector":"C174","codArt":"687"}],"688":[{"orden":305,"sector":"C175","codArt":"688"}],"689":[{"orden":306,"sector":"C176","codArt":"689"}],"690":[{"orden":307,"sector":"C177","codArt":"690"}],"691":[{"orden":308,"sector":"C178","codArt":"691"}],"692":[{"orden":309,"sector":"C179","codArt":"692"}],"693":[{"orden":310,"sector":"C180","codArt":"693"}],"694":[{"orden":311,"sector":"C181","codArt":"694"}],"695":[{"orden":312,"sector":"C182","codArt":"695"}],"696":[{"orden":313,"sector":"C183","codArt":"696"}],"697":[{"orden":314,"sector":"C184","codArt":"697"}],"698":[{"orden":315,"sector":"C185","codArt":"698"}],"699":[{"orden":316,"sector":"C186","codArt":"699"}],"700":[{"orden":317,"sector":"C187","codArt":"700"}],"701":[{"orden":318,"sector":"C188","codArt":"701"}],"702":[{"orden":319,"sector":"C189","codArt":"702"}],"703":[{"orden":320,"sector":"C190","codArt":"703"}],"704":[{"orden":321,"sector":"C191","codArt":"704"}],"705":[{"orden":322,"sector":"C192","codArt":"705"}],"706":[{"orden":323,"sector":"C193","codArt":"706"}],"707":[{"orden":324,"sector":"C194","codArt":"707"}],"708":[{"orden":325,"sector":"C195","codArt":"708"}],"709":[{"orden":326,"sector":"C196","codArt":"709"}],"710":[{"orden":327,"sector":"C197","codArt":"710"}],"711":[{"orden":328,"sector":"C198","codArt":"711"}],"712":[{"orden":329,"sector":"C199","codArt":"712"}],"713":[{"orden":330,"sector":"C200","codArt":"713"}],"714":[{"orden":331,"sector":"C201","codArt":"714"}],"715":[{"orden":332,"sector":"C202","codArt":"715"}],"716":[{"orden":333,"sector":"C203","codArt":"716"}],"717":[{"orden":334,"sector":"C204","codArt":"717"}],"718":[{"orden":335,"sector":"C205","codArt":"718"}],"719":[{"orden":336,"sector":"C206","codArt":"719"}],"720":[{"orden":337,"sector":"C207","codArt":"720"}],"721":[{"orden":338,"sector":"C208","codArt":"721"}],"722":[{"orden":339,"sector":"C209","codArt":"722"}],"723":[{"orden":340,"sector":"C210","codArt":"723"}],"724":[{"orden":341,"sector":"C211","codArt":"724"}],"725":[{"orden":342,"sector":"C212","codArt":"725"}],"726":[{"orden":343,"sector":"C213","codArt":"726"}]};
+
+    const $ = (id) => document.getElementById(id);
+
+    function normalizeCode(v){
+      return String(v ?? "")
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+    }
+    function onlyDigits(v){
+      if (v === null || v === undefined) return "";
+      return String(v).replace(/[^\d]/g, "");
+    }
+
+    function switchTab(n){
+      const tab1 = $("tab1");
+      const tab2 = $("tab2");
+      const b1 = $("tab1Btn");
+      const b2 = $("tab2Btn");
+
+      if(n === 1){
+        tab1.style.display = "";
+        tab2.style.display = "none";
+        b1.classList.add("active");
+        b2.classList.remove("active");
+      }else{
+        tab1.style.display = "none";
+        tab2.style.display = "";
+        b2.classList.add("active");
+        b1.classList.remove("active");
+      }
+    }
+
+    function buildSelect(min, max, selectedValue){
+      const sel = document.createElement("select");
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = "—";
+      sel.appendChild(opt0);
+
+      for(let i=min;i<=max;i++){
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = String(i);
+        if(String(i) === String(selectedValue)) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      return sel;
+    }
+
+    function setStatus(){
+      const leg = onlyDigits($("legajo").value);
+      const c1 = normalizeCode($("cod1").value);
+      const c2 = normalizeCode($("cod2").value);
+      const cnt = [c1,c2].filter(Boolean).length;
+      $("statusPill").textContent = leg ? `Legajo ${leg} · ${cnt} código(s)` : "Sin datos";
+    }
+
+    const STATE = {
+      legajo: "",
+      codes: [],
+      rows: [],   // filas expandidas (una por ubicacion)
+      fills: {}   // key => {pilas, cjasXPila, cjasSueltas}
+    };
+
+    function makeRowKey(r){
+      return `${r.orden}|${r.sector}|${r.codArt}`;
+    }
+
+    function parseTab1(){
+      const legajo = onlyDigits($("legajo").value);
+      const cod1 = normalizeCode($("cod1").value);
+      const cod2 = normalizeCode($("cod2").value);
+
+      $("msg1").textContent = "";
+      $("msg1b").textContent = "";
+      $("msg1").classList.remove("error");
+      $("msg1b").classList.remove("error");
+
+      if(!legajo){
+        $("msg1").textContent = "Ingresá el número de legajo.";
+        $("msg1").classList.add("error");
+        return null;
+      }
+
+      const codes = [cod1, cod2].filter(Boolean);
+      if(codes.length === 0){
+        $("msg1b").textContent = "Ingresá al menos 1 código.";
+        $("msg1b").classList.add("error");
+        return null;
+      }
+
+      const uniqCodes = Array.from(new Set(codes));
+
+      // Expandir: si un código tiene varias ubicaciones => varias filas
+      const rows = [];
+      for(const code of uniqCodes){
+        const locs = MAP[code];
+        if(Array.isArray(locs) && locs.length){
+          for(const loc of locs){
+            rows.push({
+              orden: Number(loc.orden),
+              sector: String(loc.sector),
+              codArt: String(loc.codArt ?? code)
+            });
+          }
+        }else{
+          rows.push({ orden: 999999, sector: "SIN MAPEO", codArt: String(code) });
+        }
+      }
+
+      rows.sort((a,b) => (a.orden - b.orden) || a.sector.localeCompare(b.sector) || a.codArt.localeCompare(b.codArt));
+
+      return { legajo, codes: uniqCodes, rows };
+    }
+
+    function renderTab2(){
+      $("legajoPill").textContent = `Legajo: ${STATE.legajo || "—"}`;
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      const hasUnknown = STATE.rows.some(r => r.sector === "SIN MAPEO");
+      $("msg2").textContent = hasUnknown
+        ? "Hay códigos sin mapeo (Sector = SIN MAPEO)."
+        : "";
+
+      $("msgSend").textContent = "";
+      $("msgSend").className = "msg";
+
+      for(const r of STATE.rows){
+        const key = makeRowKey(r);
+        if(!STATE.fills[key]) STATE.fills[key] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
+
+        const tr = document.createElement("tr");
+
+        const tdOrden = document.createElement("td");
+        tdOrden.textContent = (r.orden === 999999) ? "—" : String(r.orden);
+
+        const tdSector = document.createElement("td");
+        tdSector.textContent = r.sector;
+
+        const tdCod = document.createElement("td");
+        tdCod.textContent = r.codArt;
+
+        const tdRight = document.createElement("td");
+        tdRight.style.textAlign = "right";
+
+        const wrap = document.createElement("div");
+        wrap.className = "right";
+
+        // Pilas 1-30
+        const box1 = document.createElement("div");
+        box1.className = "fieldSmall";
+        const lab1 = document.createElement("label");
+        lab1.textContent = "Pilas";
+        lab1.style.margin = "0 0 6px 2px";
+        const selPilas = buildSelect(1, 30, STATE.fills[key].pilas);
+        selPilas.addEventListener("change", () => { STATE.fills[key].pilas = selPilas.value; });
+        box1.appendChild(lab1);
+        box1.appendChild(selPilas);
+
+        // Cjas x Pila 1-10
+        const box2 = document.createElement("div");
+        box2.className = "fieldSmall";
+        const lab2 = document.createElement("label");
+        lab2.textContent = "Cjas x Pila";
+        lab2.style.margin = "0 0 6px 2px";
+        const selCxp = buildSelect(1, 10, STATE.fills[key].cjasXPila);
+        selCxp.addEventListener("change", () => { STATE.fills[key].cjasXPila = selCxp.value; });
+        box2.appendChild(lab2);
+        box2.appendChild(selCxp);
+
+        // Cjas Sueltas
+        const box3 = document.createElement("div");
+        box3.className = "fieldSmall";
+        const lab3 = document.createElement("label");
+        lab3.textContent = "Cjas Sueltas";
+        lab3.style.margin = "0 0 6px 2px";
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.inputMode = "numeric";
+        inp.min = "0";
+        inp.step = "1";
+        inp.placeholder = "0";
+        inp.value = STATE.fills[key].cjasSueltas || "";
+        inp.addEventListener("input", () => { STATE.fills[key].cjasSueltas = onlyDigits(inp.value); });
+        box3.appendChild(lab3);
+        box3.appendChild(inp);
+
+        wrap.appendChild(box1);
+        wrap.appendChild(box2);
+        wrap.appendChild(box3);
+        tdRight.appendChild(wrap);
+
+        tr.appendChild(tdOrden);
+        tr.appendChild(tdSector);
+        tr.appendChild(tdCod);
+        tr.appendChild(tdRight);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function payloadForSheet(){
+      const rows = STATE.rows.map(r => {
+        const key = makeRowKey(r);
+        const f = STATE.fills[key] || {};
+        return {
+          orden: (r.orden === 999999 ? "" : r.orden),
+          sector: r.sector,
+          codArt: r.codArt,
+          pilas: f.pilas || "",
+          cjasXPila: f.cjasXPila || "",
+          cjasSueltas: f.cjasSueltas || "",
+          key
+        };
+      });
+
+      return {
+        ts: new Date().toISOString(),
+        legajo: STATE.legajo,
+        codes: STATE.codes,
+        rows
+      };
+    }
+
+    async function sendToSheet(){
+      const msg = $("msgSend");
+      msg.textContent = "";
+      msg.className = "msg";
+
+      if(!STATE.legajo || STATE.rows.length === 0){
+        msg.textContent = "No hay datos para enviar. Volvé a la pestaña 1 y cargá legajo y códigos.";
+        msg.classList.add("error");
+        return;
+      }
+
+      const payload = payloadForSheet();
+
+      try{
+        await fetch(APP_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        msg.textContent = "Enviado al Google Sheet ✅";
+        msg.classList.add("ok");
+      }catch(e){
+        msg.textContent = "Error enviando al Sheet: " + (e?.message || e);
+        msg.classList.add("error");
+      }
+    }
+
+    function saveLocal(){
+      const payload = payloadForSheet();
+      localStorage.setItem("registro_codigos_v2", JSON.stringify(payload));
+      alert("Guardado en el navegador (local).");
+    }
+
+    function clearAll(){
+      $("legajo").value = "";
+      $("cod1").value = "";
+      $("cod2").value = "";
+      $("msg1").textContent = "";
+      $("msg1b").textContent = "";
+      STATE.legajo = "";
+      STATE.codes = [];
+      STATE.rows = [];
+      STATE.fills = {};
+      setStatus();
+    }
+
+    function resetFills(){
+      for(const k of Object.keys(STATE.fills)){
+        STATE.fills[k] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
+      }
+      renderTab2();
+      $("msgSend").textContent = "Cantidades reseteadas.";
+      $("msgSend").className = "msg ok";
+    }
+
+    $("tab1Btn").addEventListener("click", () => switchTab(1));
+    $("tab2Btn").addEventListener("click", () => switchTab(2));
+
+    $("legajo").addEventListener("input", setStatus);
+    $("cod1").addEventListener("input", setStatus);
+    $("cod2").addEventListener("input", setStatus);
+
+    $("limpiarBtn").addEventListener("click", clearAll);
+
+    $("siguienteBtn").addEventListener("click", () => {
+      const parsed = parseTab1();
+      if(!parsed) return;
+
+      STATE.legajo = parsed.legajo;
+      STATE.codes = parsed.codes;
+      STATE.rows = parsed.rows;
+
+      renderTab2();
+      switchTab(2);
+    });
+
+    $("volverBtn").addEventListener("click", () => switchTab(1));
+    $("guardarLocalBtn").addEventListener("click", saveLocal);
+    $("enviarSheetBtn").addEventListener("click", sendToSheet);
+    $("resetFillsBtn").addEventListener("click", resetFills);
+
+    setStatus();
+  </script>
+</body>
+</html>
