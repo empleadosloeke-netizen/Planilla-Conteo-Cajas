@@ -165,21 +165,21 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
 
       const tdPA = document.createElement("td"); tdPA.className="compact";
       const inpPA = document.createElement("input");
-      inpPA.type="tel"; inpPA.inputMode="numeric"; inpPA.maxLength=2; inpPA.placeholder="0";
+      inpPA.type="tel"; inpPA.inputMode="numeric"; inpPA.maxLength=3; inpPA.placeholder="0";
       inpPA.value = STATE.resumen[code].pickings || "";
 
       const tdPFC = document.createElement("td"); tdPFC.className="compact";
       const inpPFC = document.createElement("input");
-      inpPFC.type="tel"; inpPFC.inputMode="numeric"; inpPFC.maxLength=2; inpPFC.placeholder="0";
+      inpPFC.type="tel"; inpPFC.inputMode="numeric"; inpPFC.maxLength=3; inpPFC.placeholder="0";
       inpPFC.value = STATE.resumen[code].pfc || "";
 
       const tdMT = document.createElement("td"); tdMT.className="compact";
       const inpMT = document.createElement("input");
-      inpMT.type="tel"; inpMT.inputMode="numeric"; inpMT.maxLength=2; inpMT.placeholder="0";
+      inpMT.type="tel"; inpMT.inputMode="numeric"; inpMT.maxLength=3; inpMT.placeholder="0";
       inpMT.value = STATE.resumen[code].transito || "";
 
       function clamp(codeKey, field, el){
-        el.value = onlyDigits(el.value).slice(0,2);
+        el.value = onlyDigits(el.value).slice(0,3);
         STATE.resumen[codeKey][field] = el.value;
       }
 
@@ -333,5 +333,6 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
   // init
   setStatus();
 })();
+
 
 
