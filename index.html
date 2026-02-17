@@ -99,6 +99,42 @@
     .msg.error{color:var(--danger)}
     .msg.ok{color:var(--accent)}
 
+    /* Inputs grandes para legajo y códigos */
+    .bigInputsRow{
+      display:flex;
+      gap:12px;
+      align-items:flex-end;
+      flex-wrap:wrap;
+    }
+    .bigField{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    /* Legajo: ancho para 3 dígitos, letra grande */
+    .legajoInput{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:1px;
+      text-align:center;
+      width: 4.2ch;         /* ~3 dígitos + margen */
+      max-width: 4.2ch;
+      padding:14px 10px;
+    }
+
+    /* Código: ancho máx 4 caracteres, letra grande */
+    .codeInput{
+      font-size:30px;
+      font-weight:900;
+      letter-spacing:.5px;
+      text-align:center;
+      width: 5ch;           /* 4 chars + margen */
+      max-width: 5ch;
+      padding:14px 10px;
+      text-transform:uppercase;
+    }
+
     /* TAB 2 */
     .backBar{
       position:sticky;
@@ -127,6 +163,7 @@
     .backText .t1{font-weight:900; font-size:14px;}
     .backText .t2{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
+    /* Tabla sin scroll horizontal en celular */
     .tableWrap{
       margin-top:10px;
       border:1px solid var(--line);
@@ -140,7 +177,7 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      min-width: 720px;
+      table-layout:fixed; /* clave para que entre en ancho de celular */
     }
     thead th{
       position:sticky;
@@ -151,32 +188,73 @@
       text-align:left;
       font-size:12px;
       color:var(--muted);
-      padding:10px 8px;
+      padding:10px 6px;
       border-bottom:1px solid var(--line);
-      white-space:nowrap;
+      white-space:normal;
+      line-height:1.05;
     }
     tbody td{
-      padding:10px 8px;
+      padding:10px 6px;
       border-bottom:1px solid rgba(255,255,255,.08);
       vertical-align:middle;
       font-size:14px;
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     tbody tr:last-child td{border-bottom:0}
 
+    /* Columnas compactas para 2 dígitos */
     .compact select, .compact input{
-      padding:10px 10px;
+      padding:10px 8px;
       border-radius:12px;
-      font-size:15px;
-      width:110px;
-      max-width: 36vw;
+      font-size:16px; /* mantiene el tamaño actual */
+      width: 3.6ch;   /* ~2 dígitos + margen */
+      max-width: 3.6ch;
+      text-align:center;
     }
-    .compact .total{
-      width:120px;
-      max-width: 40vw;
-      opacity:.95;
-    }
+
+    /* Ajustes para que Sector y Cod también entren */
+    .colSector{width:22%;}
+    .colCod{width:18%;}
+    .colPilas{width:14%;}
+    .colCxp{width:23%;}
+    .colSueltas{width:23%;}
+
     .mutedSmall{color:var(--muted); font-size:12px}
+
+    /* Overlay cargando */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      padding:24px;
+    }
+    .overlayCard{
+      background:rgba(17,26,51,.92);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px 16px;
+      width:min(360px, 92vw);
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .spinner{
+      width:28px; height:28px;
+      border-radius:50%;
+      border:3px solid rgba(255,255,255,.20);
+      border-top-color: rgba(94,234,212,.95);
+      animation:spin 1s linear infinite;
+      flex:0 0 auto;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .overlayText .t1{font-weight:900;}
+    .overlayText .t2{color:var(--muted); font-size:12px; margin-top:2px;}
   </style>
 </head>
 
@@ -189,39 +267,37 @@
         <div class="cardHeader">
           <div>
             <div class="title">1) Cargar</div>
-            <div class="hint">Legajo + 2 códigos (texto). Mantiene 0 adelante (ej: 066).</div>
+            <div class="hint">Legajo (3 dígitos) + 2 códigos (hasta 4 caracteres). Mantiene 0 adelante (ej: 066).</div>
           </div>
           <div class="pill" id="statusPill">Sin datos</div>
         </div>
 
         <div class="cardBody">
-          <div class="grid two">
-            <div>
-              <label for="legajo">Número de legajo</label>
-              <input id="legajo" inputmode="numeric" type="number" min="0" step="1" placeholder="Ej: 12" />
-              <div class="msg" id="msg1"></div>
-            </div>
+          <div class="grid">
+            <div class="bigInputsRow">
+              <div class="bigField">
+                <label for="legajo">Legajo</label>
+                <input id="legajo" class="legajoInput" inputmode="numeric" type="tel" maxlength="3" placeholder="000" />
+              </div>
 
-            <div class="card" style="background:rgba(0,0,0,.10); border:1px solid var(--line);">
-              <div class="cardBody">
-                <div class="row two">
-                  <div>
-                    <label for="cod1">Código 1</label>
-                    <input id="cod1" type="text" placeholder="Ej: 066 / 607E / 502" autocomplete="off" />
-                  </div>
-                  <div>
-                    <label for="cod2">Código 2</label>
-                    <input id="cod2" type="text" placeholder="Ej: 057 / 323 / 504" autocomplete="off" />
-                  </div>
-                </div>
+              <div class="bigField">
+                <label for="cod1">Código 1</label>
+                <input id="cod1" class="codeInput" type="text" maxlength="4" placeholder="0000" autocomplete="off" />
+              </div>
 
-                <div class="actions">
-                  <button class="btn secondary" id="limpiarBtn" type="button">Limpiar</button>
-                  <button class="btn" id="siguienteBtn" type="button">Siguiente</button>
-                </div>
-                <div class="msg" id="msg1b"></div>
+              <div class="bigField">
+                <label for="cod2">Código 2</label>
+                <input id="cod2" class="codeInput" type="text" maxlength="4" placeholder="0000" autocomplete="off" />
               </div>
             </div>
+
+            <div class="actions">
+              <button class="btn secondary" id="limpiarBtn" type="button">Limpiar</button>
+              <button class="btn" id="siguienteBtn" type="button">Siguiente</button>
+            </div>
+
+            <div class="msg" id="msg1"></div>
+            <div class="msg" id="msg1b"></div>
           </div>
         </div>
       </section>
@@ -245,13 +321,11 @@
           <table>
             <thead>
               <tr>
-                <th style="width:70px;">Ord</th>
-                <th style="width:90px;">Sector</th>
-                <th style="width:90px;">Cod</th>
-                <th style="width:110px;">Pilas</th>
-                <th style="width:120px;">Cjas x Pila</th>
-                <th style="width:130px;">Cjas Sueltas</th>
-                <th style="width:120px;">Total Cjas</th>
+                <th class="colSector">Sector</th>
+                <th class="colCod">Cod</th>
+                <th class="colPilas">Pilas</th>
+                <th class="colCxp">Cjas<br>x Pila</th>
+                <th class="colSueltas">Cjas<br>Sueltas</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -262,17 +336,28 @@
           <button class="btn secondary" id="resetFillsBtn" type="button">Reset</button>
           <button class="btn" id="enviarSheetBtn" type="button">Enviar a Google Sheet</button>
         </div>
-        <div class="msg mutedSmall">Total Cjas = Pilas * Cjas x Pila + Cjas Sueltas</div>
         <div class="msg" id="msgSend"></div>
       </section>
 
     </div>
   </div>
 
+  <!-- Overlay cargando -->
+  <div class="overlay" id="overlay">
+    <div class="overlayCard">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="overlayText">
+        <div class="t1">Enviando…</div>
+        <div class="t2">Guardando en Google Sheet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planimetría (no tocar) -->
   <script src="planimetria.js"></script>
 
   <script>
-    // ✅ Tu Web App /exec (si cambiaste deployment, actualizá este link)
+    // ✅ Tu Web App /exec
     const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfh9xaVqS-POGY1lB4WJmn_MWhRkoEN1YL8g3SQ6dezMJoMcGGXEjtvs5xghHZM41U/exec";
 
     const MAP = (window.PLANIMETRIA_MAP || {});
@@ -289,9 +374,9 @@
     }
 
     function setStatus(){
-      const leg = onlyDigits($("legajo").value);
-      const c1 = normalizeCode($("cod1").value);
-      const c2 = normalizeCode($("cod2").value);
+      const leg = onlyDigits($("legajo").value).slice(0,3);
+      const c1 = normalizeCode($("cod1").value).slice(0,4);
+      const c2 = normalizeCode($("cod2").value).slice(0,4);
       const cnt = [c1,c2].filter(Boolean).length;
       $("statusPill").textContent = leg ? `Legajo ${leg} · ${cnt} código(s)` : "Sin datos";
     }
@@ -322,9 +407,9 @@
     }
 
     function parseTab1(){
-      const legajo = onlyDigits($("legajo").value);
-      const cod1 = normalizeCode($("cod1").value);
-      const cod2 = normalizeCode($("cod2").value);
+      const legajo = onlyDigits($("legajo").value).slice(0,3);
+      const cod1 = normalizeCode($("cod1").value).slice(0,4);
+      const cod2 = normalizeCode($("cod2").value).slice(0,4);
 
       $("msg1").textContent = ""; $("msg1b").textContent = "";
       $("msg1").className = "msg"; $("msg1b").className = "msg";
@@ -334,7 +419,6 @@
         $("msg1").classList.add("error");
         return null;
       }
-
       const codes = [cod1,cod2].filter(Boolean);
       if(codes.length === 0){
         $("msg1b").textContent = "Ingresá al menos 1 código.";
@@ -360,6 +444,7 @@
         }
       }
 
+      // ordenar por orden (sin mostrarlo)
       rows.sort((a,b) => (a.orden-b.orden) || a.sector.localeCompare(b.sector) || a.codArt.localeCompare(b.codArt));
       return { legajo, codes: uniq, rows };
     }
@@ -376,9 +461,6 @@
         if(!STATE.fills[key]) STATE.fills[key] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
 
         const tr = document.createElement("tr");
-
-        const tdOrd = document.createElement("td");
-        tdOrd.textContent = (r.orden === 999999) ? "—" : String(r.orden);
 
         const tdSec = document.createElement("td");
         tdSec.textContent = r.sector;
@@ -397,41 +479,31 @@
         const tdS = document.createElement("td");
         tdS.className = "compact";
         const inpS = document.createElement("input");
-        inpS.type = "number";
+        inpS.type = "tel";
         inpS.inputMode = "numeric";
-        inpS.min = "0";
-        inpS.step = "1";
+        inpS.maxLength = 2;
         inpS.placeholder = "0";
         inpS.value = STATE.fills[key].cjasSueltas || "";
 
-        const tdT = document.createElement("td");
-        tdT.className = "compact";
-        const totalInput = document.createElement("input");
-        totalInput.className = "total";
-        totalInput.type = "text";
-        totalInput.readOnly = true;
-
-        function refreshTotal(){
-          totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
+        // limitar a 2 dígitos
+        function clamp2Digits(){
+          inpS.value = onlyDigits(inpS.value).slice(0,2);
+          STATE.fills[key].cjasSueltas = inpS.value;
         }
 
-        selP.addEventListener("change", () => { STATE.fills[key].pilas = selP.value; refreshTotal(); });
-        selCxp.addEventListener("change", () => { STATE.fills[key].cjasXPila = selCxp.value; refreshTotal(); });
-        inpS.addEventListener("input", () => { STATE.fills[key].cjasSueltas = onlyDigits(inpS.value); refreshTotal(); });
+        selP.addEventListener("change", () => { STATE.fills[key].pilas = selP.value; });
+        selCxp.addEventListener("change", () => { STATE.fills[key].cjasXPila = selCxp.value; });
+        inpS.addEventListener("input", clamp2Digits);
 
         tdP.appendChild(selP);
         tdCxp.appendChild(selCxp);
         tdS.appendChild(inpS);
-        tdT.appendChild(totalInput);
-        refreshTotal();
 
-        tr.appendChild(tdOrd);
         tr.appendChild(tdSec);
         tr.appendChild(tdCod);
         tr.appendChild(tdP);
         tr.appendChild(tdCxp);
         tr.appendChild(tdS);
-        tr.appendChild(tdT);
 
         tbody.appendChild(tr);
       }
@@ -441,7 +513,7 @@
       const rows = STATE.rows.map(r => {
         const key = rowKey(r);
         const f = STATE.fills[key] || {};
-        const total = calcTotal(f.pilas, f.cjasXPila, f.cjasSueltas);
+        const total = calcTotal(f.pilas, f.cjasXPila, f.cjasSueltas); // se envía aunque no se muestre
         return {
           orden: (r.orden === 999999 ? "" : r.orden),
           sector: r.sector,
@@ -456,6 +528,27 @@
       return { ts: new Date().toISOString(), legajo: STATE.legajo, codes: STATE.codes, rows };
     }
 
+    function showOverlay(on){
+      $("overlay").style.display = on ? "flex" : "none";
+    }
+
+    function resetAllToStart(){
+      // limpiar estado + volver a tab 1
+      $("legajo").value = "";
+      $("cod1").value = "";
+      $("cod2").value = "";
+      $("msg1").textContent = "";
+      $("msg1b").textContent = "";
+      $("msgSend").textContent = "";
+      STATE.legajo = "";
+      STATE.codes = [];
+      STATE.rows = [];
+      STATE.fills = {};
+      setStatus();
+      switchTab(1);
+      $("legajo").focus();
+    }
+
     async function sendToSheet(){
       const msg = $("msgSend");
       msg.textContent = "";
@@ -468,6 +561,8 @@
       }
 
       try{
+        showOverlay(true);
+
         await fetch(APP_SCRIPT_URL, {
           method: "POST",
           mode: "no-cors",
@@ -475,9 +570,14 @@
           body: JSON.stringify(payloadForSheet())
         });
 
-        msg.textContent = "Envío realizado. Revisá el Sheet. Si no aparece, mirá Apps Script > Executions.";
-        msg.classList.add("ok");
+        // Espera corta para que el usuario vea el “cargando”
+        await new Promise(r => setTimeout(r, 700));
+
+        showOverlay(false);
+        resetAllToStart();
+
       }catch(e){
+        showOverlay(false);
         msg.textContent = "Error enviando: " + (e?.message || e);
         msg.classList.add("error");
       }
@@ -488,28 +588,28 @@
         STATE.fills[k] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
       }
       renderTab2();
-      $("msgSend").textContent = "Reseteado.";
-      $("msgSend").className = "msg ok";
+      const msg = $("msgSend");
+      msg.textContent = "Reseteado.";
+      msg.className = "msg ok";
     }
 
-    function limpiar(){
-      $("legajo").value = "";
-      $("cod1").value = "";
-      $("cod2").value = "";
-      $("msg1").textContent = "";
-      $("msg1b").textContent = "";
-      STATE.legajo = "";
-      STATE.codes = [];
-      STATE.rows = [];
-      STATE.fills = {};
+    // Eventos y límites de caracteres
+    $("legajo").addEventListener("input", () => {
+      $("legajo").value = onlyDigits($("legajo").value).slice(0,3);
       setStatus();
-    }
+    });
 
-    $("legajo").addEventListener("input", setStatus);
-    $("cod1").addEventListener("input", setStatus);
-    $("cod2").addEventListener("input", setStatus);
+    $("cod1").addEventListener("input", () => {
+      $("cod1").value = normalizeCode($("cod1").value).slice(0,4);
+      setStatus();
+    });
 
-    $("limpiarBtn").addEventListener("click", limpiar);
+    $("cod2").addEventListener("input", () => {
+      $("cod2").value = normalizeCode($("cod2").value).slice(0,4);
+      setStatus();
+    });
+
+    $("limpiarBtn").addEventListener("click", resetAllToStart);
 
     $("siguienteBtn").addEventListener("click", () => {
       const parsed = parseTab1();
@@ -525,6 +625,7 @@
     $("enviarSheetBtn").addEventListener("click", sendToSheet);
     $("resetFillsBtn").addEventListener("click", resetFills);
 
+    // Init
     setStatus();
   </script>
 </body>
