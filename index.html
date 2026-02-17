@@ -4,258 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Planilla Conteo Cajas</title>
-
-  <style>
-    :root{
-      --bg:#0b1020;
-      --text:#eef2ff;
-      --muted:rgba(238,242,255,.70);
-      --line:rgba(255,255,255,.12);
-      --accent:#5eead4;
-      --danger:#fb7185;
-      --radius:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
-      background: radial-gradient(1000px 520px at 20% 0%, rgba(94,234,212,.16), transparent 55%),
-                  radial-gradient(820px 480px at 90% 10%, rgba(99,102,241,.16), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-    }
-
-    .page{min-height:100%; padding:14px; display:flex; justify-content:center;}
-    .wrap{width:min(980px, 100%); display:flex; flex-direction:column; gap:12px;}
-
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:0 18px 60px rgba(0,0,0,.35);
-      overflow:hidden;
-    }
-    .cardHeader{
-      padding:14px;
-      border-bottom:1px solid var(--line);
-      background:rgba(0,0,0,.14);
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .title{font-weight:900; font-size:16px; letter-spacing:.2px;}
-    .hint{margin-top:4px; font-size:12px; color:var(--muted); line-height:1.3;}
-    .pill{
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid var(--line);
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.04);
-      white-space:nowrap;
-      align-self:flex-start;
-    }
-    .cardBody{padding:14px}
-
-    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px}
-    input, select{
-      width:100%;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(17,26,51,.65);
-      color:var(--text);
-      outline:none;
-      font-size:16px;
-    }
-    input::placeholder{color:rgba(238,242,255,.38)}
-    input:focus, select:focus{
-      border-color:rgba(94,234,212,.55);
-      box-shadow:0 0 0 4px rgba(94,234,212,.12);
-    }
-
-    .grid{display:grid; gap:12px; grid-template-columns:1fr;}
-    @media (min-width: 760px){ .grid.two{grid-template-columns:1fr 1fr;} }
-
-    .row{display:grid; gap:10px; grid-template-columns:1fr;}
-    @media (min-width: 760px){ .row.two{grid-template-columns:1fr 1fr;} }
-
-    .actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px;}
-    .btn{
-      border:0; cursor:pointer;
-      padding:12px 14px;
-      border-radius:14px;
-      font-weight:900;
-      background:rgba(94,234,212,.18);
-      border:1px solid rgba(94,234,212,.35);
-      color:var(--text);
-    }
-    .btn.secondary{background:rgba(255,255,255,.06); border:1px solid var(--line);}
-    .btn.danger{background:rgba(251,113,133,.14); border:1px solid rgba(251,113,133,.35);}
-
-    .msg{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.35;}
-    .msg.error{color:var(--danger)}
-    .msg.ok{color:var(--accent)}
-
-    /* Inputs grandes para legajo y códigos */
-    .bigInputsRow{
-      display:flex;
-      gap:12px;
-      align-items:flex-end;
-      flex-wrap:wrap;
-    }
-    .bigField{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-
-    /* Legajo: ancho para 3 dígitos, letra grande */
-    .legajoInput{
-      font-size:34px;
-      font-weight:900;
-      letter-spacing:1px;
-      text-align:center;
-      width: 4.2ch;         /* ~3 dígitos + margen */
-      max-width: 4.2ch;
-      padding:14px 10px;
-    }
-
-    /* Código: ancho máx 4 caracteres, letra grande */
-    .codeInput{
-      font-size:30px;
-      font-weight:900;
-      letter-spacing:.5px;
-      text-align:center;
-      width: 5ch;           /* 4 chars + margen */
-      max-width: 5ch;
-      padding:14px 10px;
-      text-transform:uppercase;
-    }
-
-    /* TAB 2 */
-    .backBar{
-      position:sticky;
-      top:0;
-      z-index:30;
-      background:rgba(11,16,32,.88);
-      backdrop-filter: blur(8px);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:10px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .backBtn{
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.05);
-      color:var(--text);
-      width:44px; height:44px;
-      border-radius:14px;
-      display:grid; place-items:center;
-      cursor:pointer;
-      flex:0 0 auto;
-    }
-    .backText{display:flex; flex-direction:column; gap:2px; min-width:0;}
-    .backText .t1{font-weight:900; font-size:14px;}
-    .backText .t2{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-
-    /* Tabla sin scroll horizontal en celular */
-    .tableWrap{
-      margin-top:10px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      overflow:auto;
-      max-height: calc(100vh - 220px);
-      background:rgba(17,26,51,.35);
-    }
-
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      table-layout:fixed; /* clave para que entre en ancho de celular */
-    }
-    thead th{
-      position:sticky;
-      top:0;
-      z-index:10;
-      background:rgba(0,0,0,.35);
-      backdrop-filter: blur(6px);
-      text-align:left;
-      font-size:12px;
-      color:var(--muted);
-      padding:10px 6px;
-      border-bottom:1px solid var(--line);
-      white-space:normal;
-      line-height:1.05;
-    }
-    tbody td{
-      padding:10px 6px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      vertical-align:middle;
-      font-size:14px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    tbody tr:last-child td{border-bottom:0}
-
-    /* Columnas compactas para 2 dígitos */
-    .compact select, .compact input{
-      padding:10px 8px;
-      border-radius:12px;
-      font-size:16px; /* mantiene el tamaño actual */
-      width: 3.6ch;   /* ~2 dígitos + margen */
-      max-width: 3.6ch;
-      text-align:center;
-    }
-
-    /* Ajustes para que Sector y Cod también entren */
-    .colSector{width:22%;}
-    .colCod{width:18%;}
-    .colPilas{width:14%;}
-    .colCxp{width:23%;}
-    .colSueltas{width:23%;}
-
-    .mutedSmall{color:var(--muted); font-size:12px}
-
-    /* Overlay cargando */
-    .overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.45);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:999;
-      padding:24px;
-    }
-    .overlayCard{
-      background:rgba(17,26,51,.92);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:18px 16px;
-      width:min(360px, 92vw);
-      display:flex;
-      gap:12px;
-      align-items:center;
-    }
-    .spinner{
-      width:28px; height:28px;
-      border-radius:50%;
-      border:3px solid rgba(255,255,255,.20);
-      border-top-color: rgba(94,234,212,.95);
-      animation:spin 1s linear infinite;
-      flex:0 0 auto;
-    }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .overlayText .t1{font-weight:900;}
-    .overlayText .t2{color:var(--muted); font-size:12px; margin-top:2px;}
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
@@ -339,6 +88,42 @@
         <div class="msg" id="msgSend"></div>
       </section>
 
+      <!-- TAB 3 -->
+      <section id="tab3" style="display:none;">
+        <div class="backBar">
+          <button class="backBtn" id="volverBtn3" type="button" aria-label="Volver">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="backText">
+            <div class="t1">3) Cajas por Código</div>
+            <div class="t2" id="legajoLine3">Legajo: —</div>
+          </div>
+          <div style="margin-left:auto" class="pill" id="countPill3">0 códigos</div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="colCod3">Cod</th>
+                <th class="colPA">Pickings<br>Armados</th>
+                <th class="colPFC">Pedidos<br>para FC</th>
+                <th class="colMT">Mercadería<br>en Tránsito</th>
+              </tr>
+            </thead>
+            <tbody id="tbody3"></tbody>
+          </table>
+        </div>
+
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn secondary" id="reset3Btn" type="button">Reset</button>
+          <button class="btn" id="enviar3Btn" type="button">Enviar</button>
+        </div>
+        <div class="msg" id="msg3"></div>
+      </section>
+
     </div>
   </div>
 
@@ -347,286 +132,13 @@
     <div class="overlayCard">
       <div class="spinner" aria-hidden="true"></div>
       <div class="overlayText">
-        <div class="t1">Enviando…</div>
-        <div class="t2">Guardando en Google Sheet</div>
+        <div class="t1" id="overlayTitle">Enviando…</div>
+        <div class="t2" id="overlaySub">Guardando en Google Sheet</div>
       </div>
     </div>
   </div>
 
-  <!-- Planimetría (no tocar) -->
+  <!-- UN SOLO JS: planimetria.js (incluye MAP + lógica) -->
   <script src="planimetria.js"></script>
-
-  <script>
-    // ✅ Tu Web App /exec
-    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfh9xaVqS-POGY1lB4WJmn_MWhRkoEN1YL8g3SQ6dezMJoMcGGXEjtvs5xghHZM41U/exec";
-
-    const MAP = (window.PLANIMETRIA_MAP || {});
-    const $ = (id) => document.getElementById(id);
-
-    function normalizeCode(v){
-      return String(v ?? "").trim().toUpperCase().replace(/\s+/g, "");
-    }
-    function onlyDigits(v){ return String(v ?? "").replace(/[^\d]/g, ""); }
-
-    function switchTab(n){
-      $("tab1").style.display = (n===1) ? "" : "none";
-      $("tab2").style.display = (n===2) ? "" : "none";
-    }
-
-    function setStatus(){
-      const leg = onlyDigits($("legajo").value).slice(0,3);
-      const c1 = normalizeCode($("cod1").value).slice(0,4);
-      const c2 = normalizeCode($("cod2").value).slice(0,4);
-      const cnt = [c1,c2].filter(Boolean).length;
-      $("statusPill").textContent = leg ? `Legajo ${leg} · ${cnt} código(s)` : "Sin datos";
-    }
-
-    const STATE = { legajo:"", codes:[], rows:[], fills:{} };
-    function rowKey(r){ return `${r.orden}|${r.sector}|${r.codArt}`; }
-
-    function buildSelect(min, max, selectedValue){
-      const sel = document.createElement("select");
-      const opt0 = document.createElement("option");
-      opt0.value = ""; opt0.textContent = "—";
-      sel.appendChild(opt0);
-      for(let i=min;i<=max;i++){
-        const opt = document.createElement("option");
-        opt.value = String(i);
-        opt.textContent = String(i);
-        if(String(i) === String(selectedValue)) opt.selected = true;
-        sel.appendChild(opt);
-      }
-      return sel;
-    }
-
-    function calcTotal(pilas, cxp, sueltas){
-      const P = parseInt(pilas || "0", 10);
-      const C = parseInt(cxp || "0", 10);
-      const S = parseInt(sueltas || "0", 10);
-      return (P*C + S);
-    }
-
-    function parseTab1(){
-      const legajo = onlyDigits($("legajo").value).slice(0,3);
-      const cod1 = normalizeCode($("cod1").value).slice(0,4);
-      const cod2 = normalizeCode($("cod2").value).slice(0,4);
-
-      $("msg1").textContent = ""; $("msg1b").textContent = "";
-      $("msg1").className = "msg"; $("msg1b").className = "msg";
-
-      if(!legajo){
-        $("msg1").textContent = "Ingresá el número de legajo.";
-        $("msg1").classList.add("error");
-        return null;
-      }
-      const codes = [cod1,cod2].filter(Boolean);
-      if(codes.length === 0){
-        $("msg1b").textContent = "Ingresá al menos 1 código.";
-        $("msg1b").classList.add("error");
-        return null;
-      }
-
-      const uniq = Array.from(new Set(codes));
-      const rows = [];
-
-      for(const code of uniq){
-        const locs = MAP[code];
-        if(Array.isArray(locs) && locs.length){
-          for(const loc of locs){
-            rows.push({
-              orden: Number(loc.orden),
-              sector: String(loc.sector),
-              codArt: String(loc.codArt ?? code)
-            });
-          }
-        } else {
-          rows.push({ orden: 999999, sector: "SIN MAPEO", codArt: code });
-        }
-      }
-
-      // ordenar por orden (sin mostrarlo)
-      rows.sort((a,b) => (a.orden-b.orden) || a.sector.localeCompare(b.sector) || a.codArt.localeCompare(b.codArt));
-      return { legajo, codes: uniq, rows };
-    }
-
-    function renderTab2(){
-      $("legajoLine").textContent = `Legajo: ${STATE.legajo}`;
-      $("countPill").textContent = `${STATE.rows.length} filas`;
-
-      const tbody = $("tbody");
-      tbody.innerHTML = "";
-
-      for(const r of STATE.rows){
-        const key = rowKey(r);
-        if(!STATE.fills[key]) STATE.fills[key] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
-
-        const tr = document.createElement("tr");
-
-        const tdSec = document.createElement("td");
-        tdSec.textContent = r.sector;
-
-        const tdCod = document.createElement("td");
-        tdCod.textContent = r.codArt;
-
-        const tdP = document.createElement("td");
-        tdP.className = "compact";
-        const selP = buildSelect(1,30, STATE.fills[key].pilas);
-
-        const tdCxp = document.createElement("td");
-        tdCxp.className = "compact";
-        const selCxp = buildSelect(1,10, STATE.fills[key].cjasXPila);
-
-        const tdS = document.createElement("td");
-        tdS.className = "compact";
-        const inpS = document.createElement("input");
-        inpS.type = "tel";
-        inpS.inputMode = "numeric";
-        inpS.maxLength = 2;
-        inpS.placeholder = "0";
-        inpS.value = STATE.fills[key].cjasSueltas || "";
-
-        // limitar a 2 dígitos
-        function clamp2Digits(){
-          inpS.value = onlyDigits(inpS.value).slice(0,2);
-          STATE.fills[key].cjasSueltas = inpS.value;
-        }
-
-        selP.addEventListener("change", () => { STATE.fills[key].pilas = selP.value; });
-        selCxp.addEventListener("change", () => { STATE.fills[key].cjasXPila = selCxp.value; });
-        inpS.addEventListener("input", clamp2Digits);
-
-        tdP.appendChild(selP);
-        tdCxp.appendChild(selCxp);
-        tdS.appendChild(inpS);
-
-        tr.appendChild(tdSec);
-        tr.appendChild(tdCod);
-        tr.appendChild(tdP);
-        tr.appendChild(tdCxp);
-        tr.appendChild(tdS);
-
-        tbody.appendChild(tr);
-      }
-    }
-
-    function payloadForSheet(){
-      const rows = STATE.rows.map(r => {
-        const key = rowKey(r);
-        const f = STATE.fills[key] || {};
-        const total = calcTotal(f.pilas, f.cjasXPila, f.cjasSueltas); // se envía aunque no se muestre
-        return {
-          orden: (r.orden === 999999 ? "" : r.orden),
-          sector: r.sector,
-          codArt: r.codArt,
-          pilas: f.pilas || "",
-          cjasXPila: f.cjasXPila || "",
-          cjasSueltas: f.cjasSueltas || "",
-          totalCjas: String(total),
-          key
-        };
-      });
-      return { ts: new Date().toISOString(), legajo: STATE.legajo, codes: STATE.codes, rows };
-    }
-
-    function showOverlay(on){
-      $("overlay").style.display = on ? "flex" : "none";
-    }
-
-    function resetAllToStart(){
-      // limpiar estado + volver a tab 1
-      $("legajo").value = "";
-      $("cod1").value = "";
-      $("cod2").value = "";
-      $("msg1").textContent = "";
-      $("msg1b").textContent = "";
-      $("msgSend").textContent = "";
-      STATE.legajo = "";
-      STATE.codes = [];
-      STATE.rows = [];
-      STATE.fills = {};
-      setStatus();
-      switchTab(1);
-      $("legajo").focus();
-    }
-
-    async function sendToSheet(){
-      const msg = $("msgSend");
-      msg.textContent = "";
-      msg.className = "msg";
-
-      if(!STATE.legajo || STATE.rows.length === 0){
-        msg.textContent = "No hay datos para enviar.";
-        msg.classList.add("error");
-        return;
-      }
-
-      try{
-        showOverlay(true);
-
-        await fetch(APP_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payloadForSheet())
-        });
-
-        // Espera corta para que el usuario vea el “cargando”
-        await new Promise(r => setTimeout(r, 700));
-
-        showOverlay(false);
-        resetAllToStart();
-
-      }catch(e){
-        showOverlay(false);
-        msg.textContent = "Error enviando: " + (e?.message || e);
-        msg.classList.add("error");
-      }
-    }
-
-    function resetFills(){
-      for(const k of Object.keys(STATE.fills)){
-        STATE.fills[k] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
-      }
-      renderTab2();
-      const msg = $("msgSend");
-      msg.textContent = "Reseteado.";
-      msg.className = "msg ok";
-    }
-
-    // Eventos y límites de caracteres
-    $("legajo").addEventListener("input", () => {
-      $("legajo").value = onlyDigits($("legajo").value).slice(0,3);
-      setStatus();
-    });
-
-    $("cod1").addEventListener("input", () => {
-      $("cod1").value = normalizeCode($("cod1").value).slice(0,4);
-      setStatus();
-    });
-
-    $("cod2").addEventListener("input", () => {
-      $("cod2").value = normalizeCode($("cod2").value).slice(0,4);
-      setStatus();
-    });
-
-    $("limpiarBtn").addEventListener("click", resetAllToStart);
-
-    $("siguienteBtn").addEventListener("click", () => {
-      const parsed = parseTab1();
-      if(!parsed) return;
-      STATE.legajo = parsed.legajo;
-      STATE.codes = parsed.codes;
-      STATE.rows = parsed.rows;
-      renderTab2();
-      switchTab(2);
-    });
-
-    $("volverBtn").addEventListener("click", () => switchTab(1));
-    $("enviarSheetBtn").addEventListener("click", sendToSheet);
-    $("resetFillsBtn").addEventListener("click", resetFills);
-
-    // Init
-    setStatus();
-  </script>
 </body>
 </html>
