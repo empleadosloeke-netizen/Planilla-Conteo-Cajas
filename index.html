@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro de Códigos</title>
+  <title>Planilla Conteo Cajas</title>
 
   <style>
     :root{
@@ -13,7 +13,6 @@
       --line:rgba(255,255,255,.12);
       --accent:#5eead4;
       --danger:#fb7185;
-      --card: rgba(255,255,255,.06);
       --radius:16px;
     }
     *{box-sizing:border-box}
@@ -27,19 +26,8 @@
       color:var(--text);
     }
 
-    /* Layout */
-    .page{
-      min-height:100%;
-      padding:16px;
-      display:flex;
-      justify-content:center;
-    }
-    .wrap{
-      width:min(920px, 100%);
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
+    .page{min-height:100%; padding:14px; display:flex; justify-content:center;}
+    .wrap{width:min(980px, 100%); display:flex; flex-direction:column; gap:12px;}
 
     .card{
       background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
@@ -49,25 +37,16 @@
       overflow:hidden;
     }
     .cardHeader{
-      padding:14px 14px;
+      padding:14px;
       border-bottom:1px solid var(--line);
       background:rgba(0,0,0,.14);
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:10px;
     }
-    .title{
-      font-weight:850;
-      letter-spacing:.2px;
-      font-size:16px;
-    }
-    .hint{
-      margin-top:4px;
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.3;
-    }
+    .title{font-weight:900; font-size:16px; letter-spacing:.2px;}
+    .hint{margin-top:4px; font-size:12px; color:var(--muted); line-height:1.3;}
     .pill{
       font-size:12px;
       color:var(--muted);
@@ -76,6 +55,7 @@
       border-radius:999px;
       background:rgba(255,255,255,.04);
       white-space:nowrap;
+      align-self:flex-start;
     }
     .cardBody{padding:14px}
 
@@ -88,7 +68,7 @@
       background:rgba(17,26,51,.65);
       color:var(--text);
       outline:none;
-      font-size:16px; /* legible en celu */
+      font-size:16px;
     }
     input::placeholder{color:rgba(238,242,255,.38)}
     input:focus, select:focus{
@@ -96,59 +76,30 @@
       box-shadow:0 0 0 4px rgba(94,234,212,.12);
     }
 
-    .grid{
-      display:grid;
-      gap:12px;
-      grid-template-columns:1fr;
-    }
-    @media (min-width: 740px){
-      .grid.two{grid-template-columns: 1fr 1fr;}
-    }
+    .grid{display:grid; gap:12px; grid-template-columns:1fr;}
+    @media (min-width: 760px){ .grid.two{grid-template-columns:1fr 1fr;} }
 
-    .row{
-      display:grid;
-      gap:10px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 740px){
-      .row.two{grid-template-columns: 1fr 1fr;}
-    }
+    .row{display:grid; gap:10px; grid-template-columns:1fr;}
+    @media (min-width: 760px){ .row.two{grid-template-columns:1fr 1fr;} }
 
-    .actions{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
+    .actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px;}
     .btn{
-      border:0;
-      cursor:pointer;
+      border:0; cursor:pointer;
       padding:12px 14px;
       border-radius:14px;
-      font-weight:850;
+      font-weight:900;
       background:rgba(94,234,212,.18);
       border:1px solid rgba(94,234,212,.35);
       color:var(--text);
     }
-    .btn.secondary{
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--line);
-    }
-    .btn.danger{
-      background:rgba(251,113,133,.14);
-      border:1px solid rgba(251,113,133,.35);
-    }
-    .msg{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.35;
-    }
+    .btn.secondary{background:rgba(255,255,255,.06); border:1px solid var(--line);}
+    .btn.danger{background:rgba(251,113,133,.14); border:1px solid rgba(251,113,133,.35);}
+
+    .msg{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.35;}
     .msg.error{color:var(--danger)}
     .msg.ok{color:var(--accent)}
 
-    /* -------- TAB 2: Back arrow + sticky table header -------- */
+    /* TAB 2 */
     .backBar{
       position:sticky;
       top:0;
@@ -166,29 +117,22 @@
       border:1px solid var(--line);
       background:rgba(255,255,255,.05);
       color:var(--text);
-      width:44px;
-      height:44px;
+      width:44px; height:44px;
       border-radius:14px;
-      display:grid;
-      place-items:center;
+      display:grid; place-items:center;
       cursor:pointer;
       flex:0 0 auto;
     }
-    .backText{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .backText .t1{font-weight:850; font-size:14px}
-    .backText .t2{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .backText{display:flex; flex-direction:column; gap:2px; min-width:0;}
+    .backText .t1{font-weight:900; font-size:14px;}
+    .backText .t2{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
     .tableWrap{
       margin-top:10px;
       border:1px solid var(--line);
       border-radius:14px;
       overflow:auto;
-      max-height: calc(100vh - 210px); /* scroll interno */
+      max-height: calc(100vh - 220px);
       background:rgba(17,26,51,.35);
     }
 
@@ -196,9 +140,8 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      min-width: 720px; /* permite scroll horizontal si hace falta */
+      min-width: 720px;
     }
-
     thead th{
       position:sticky;
       top:0;
@@ -221,7 +164,6 @@
     }
     tbody tr:last-child td{border-bottom:0}
 
-    /* Campos compactos en TAB 2 */
     .compact select, .compact input{
       padding:10px 10px;
       border-radius:12px;
@@ -231,7 +173,7 @@
     }
     .compact .total{
       width:120px;
-      max-width: 38vw;
+      max-width: 40vw;
       opacity:.95;
     }
     .mutedSmall{color:var(--muted); font-size:12px}
@@ -247,7 +189,7 @@
         <div class="cardHeader">
           <div>
             <div class="title">1) Cargar</div>
-            <div class="hint">Legajo + 2 códigos (texto). Si hay 0 adelante, dejalo (ej: 066).</div>
+            <div class="hint">Legajo + 2 códigos (texto). Mantiene 0 adelante (ej: 066).</div>
           </div>
           <div class="pill" id="statusPill">Sin datos</div>
         </div>
@@ -288,7 +230,6 @@
       <section id="tab2" style="display:none;">
         <div class="backBar">
           <button class="backBtn" id="volverBtn" type="button" aria-label="Volver">
-            <!-- Flecha -->
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -304,13 +245,13 @@
           <table>
             <thead>
               <tr>
-                <th style="width:80px;">Ord</th>
+                <th style="width:70px;">Ord</th>
                 <th style="width:90px;">Sector</th>
                 <th style="width:90px;">Cod</th>
                 <th style="width:110px;">Pilas</th>
-                <th style="width:130px;">Cjas x Pila</th>
-                <th style="width:140px;">Cjas Sueltas</th>
-                <th style="width:130px;">Total Cjas</th>
+                <th style="width:120px;">Cjas x Pila</th>
+                <th style="width:130px;">Cjas Sueltas</th>
+                <th style="width:120px;">Total Cjas</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -328,26 +269,25 @@
     </div>
   </div>
 
-  <!-- Planimetría -->
   <script src="planimetria.js"></script>
 
   <script>
+    // ✅ Tu Web App /exec (si cambiaste deployment, actualizá este link)
     const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfh9xaVqS-POGY1lB4WJmn_MWhRkoEN1YL8g3SQ6dezMJoMcGGXEjtvs5xghHZM41U/exec";
 
     const MAP = (window.PLANIMETRIA_MAP || {});
     const $ = (id) => document.getElementById(id);
 
     function normalizeCode(v){
-      // Mantiene ceros a la izquierda. Solo trim, upper y quita espacios internos.
       return String(v ?? "").trim().toUpperCase().replace(/\s+/g, "");
     }
-    function onlyDigits(v){
-      return String(v ?? "").replace(/[^\d]/g, "");
-    }
+    function onlyDigits(v){ return String(v ?? "").replace(/[^\d]/g, ""); }
+
     function switchTab(n){
       $("tab1").style.display = (n===1) ? "" : "none";
       $("tab2").style.display = (n===2) ? "" : "none";
     }
+
     function setStatus(){
       const leg = onlyDigits($("legajo").value);
       const c1 = normalizeCode($("cod1").value);
@@ -356,22 +296,13 @@
       $("statusPill").textContent = leg ? `Legajo ${leg} · ${cnt} código(s)` : "Sin datos";
     }
 
-    const STATE = {
-      legajo: "",
-      codes: [],
-      rows: [],   // filas expandidas por ubicación
-      fills: {}   // key => {pilas, cjasXPila, cjasSueltas}
-    };
-
-    function rowKey(r){
-      return `${r.orden}|${r.sector}|${r.codArt}`;
-    }
+    const STATE = { legajo:"", codes:[], rows:[], fills:{} };
+    function rowKey(r){ return `${r.orden}|${r.sector}|${r.codArt}`; }
 
     function buildSelect(min, max, selectedValue){
       const sel = document.createElement("select");
       const opt0 = document.createElement("option");
-      opt0.value = "";
-      opt0.textContent = "—";
+      opt0.value = ""; opt0.textContent = "—";
       sel.appendChild(opt0);
       for(let i=min;i<=max;i++){
         const opt = document.createElement("option");
@@ -392,14 +323,11 @@
 
     function parseTab1(){
       const legajo = onlyDigits($("legajo").value);
-
       const cod1 = normalizeCode($("cod1").value);
       const cod2 = normalizeCode($("cod2").value);
 
-      $("msg1").textContent = "";
-      $("msg1b").textContent = "";
-      $("msg1").className = "msg";
-      $("msg1b").className = "msg";
+      $("msg1").textContent = ""; $("msg1b").textContent = "";
+      $("msg1").className = "msg"; $("msg1b").className = "msg";
 
       if(!legajo){
         $("msg1").textContent = "Ingresá el número de legajo.";
@@ -461,20 +389,10 @@
         const tdP = document.createElement("td");
         tdP.className = "compact";
         const selP = buildSelect(1,30, STATE.fills[key].pilas);
-        selP.addEventListener("change", () => {
-          STATE.fills[key].pilas = selP.value;
-          totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
-        });
-        tdP.appendChild(selP);
 
         const tdCxp = document.createElement("td");
         tdCxp.className = "compact";
         const selCxp = buildSelect(1,10, STATE.fills[key].cjasXPila);
-        selCxp.addEventListener("change", () => {
-          STATE.fills[key].cjasXPila = selCxp.value;
-          totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
-        });
-        tdCxp.appendChild(selCxp);
 
         const tdS = document.createElement("td");
         tdS.className = "compact";
@@ -485,11 +403,6 @@
         inpS.step = "1";
         inpS.placeholder = "0";
         inpS.value = STATE.fills[key].cjasSueltas || "";
-        inpS.addEventListener("input", () => {
-          STATE.fills[key].cjasSueltas = onlyDigits(inpS.value);
-          totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
-        });
-        tdS.appendChild(inpS);
 
         const tdT = document.createElement("td");
         tdT.className = "compact";
@@ -497,8 +410,20 @@
         totalInput.className = "total";
         totalInput.type = "text";
         totalInput.readOnly = true;
-        totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
+
+        function refreshTotal(){
+          totalInput.value = String(calcTotal(STATE.fills[key].pilas, STATE.fills[key].cjasXPila, STATE.fills[key].cjasSueltas));
+        }
+
+        selP.addEventListener("change", () => { STATE.fills[key].pilas = selP.value; refreshTotal(); });
+        selCxp.addEventListener("change", () => { STATE.fills[key].cjasXPila = selCxp.value; refreshTotal(); });
+        inpS.addEventListener("input", () => { STATE.fills[key].cjasSueltas = onlyDigits(inpS.value); refreshTotal(); });
+
+        tdP.appendChild(selP);
+        tdCxp.appendChild(selCxp);
+        tdS.appendChild(inpS);
         tdT.appendChild(totalInput);
+        refreshTotal();
 
         tr.appendChild(tdOrd);
         tr.appendChild(tdSec);
@@ -528,13 +453,7 @@
           key
         };
       });
-
-      return {
-        ts: new Date().toISOString(),
-        legajo: STATE.legajo,
-        codes: STATE.codes,
-        rows
-      };
+      return { ts: new Date().toISOString(), legajo: STATE.legajo, codes: STATE.codes, rows };
     }
 
     async function sendToSheet(){
@@ -556,7 +475,7 @@
           body: JSON.stringify(payloadForSheet())
         });
 
-        msg.textContent = "Enviado al Google Sheet ✅";
+        msg.textContent = "Envío realizado. Revisá el Sheet. Si no aparece, mirá Apps Script > Executions.";
         msg.classList.add("ok");
       }catch(e){
         msg.textContent = "Error enviando: " + (e?.message || e);
@@ -569,9 +488,8 @@
         STATE.fills[k] = { pilas:"", cjasXPila:"", cjasSueltas:"" };
       }
       renderTab2();
-      const msg = $("msgSend");
-      msg.textContent = "Reseteado.";
-      msg.className = "msg ok";
+      $("msgSend").textContent = "Reseteado.";
+      $("msgSend").className = "msg ok";
     }
 
     function limpiar(){
@@ -587,7 +505,6 @@
       setStatus();
     }
 
-    // Events
     $("legajo").addEventListener("input", setStatus);
     $("cod1").addEventListener("input", setStatus);
     $("cod2").addEventListener("input", setStatus);
@@ -597,11 +514,9 @@
     $("siguienteBtn").addEventListener("click", () => {
       const parsed = parseTab1();
       if(!parsed) return;
-
       STATE.legajo = parsed.legajo;
       STATE.codes = parsed.codes;
       STATE.rows = parsed.rows;
-
       renderTab2();
       switchTab(2);
     });
@@ -610,7 +525,6 @@
     $("enviarSheetBtn").addEventListener("click", sendToSheet);
     $("resetFillsBtn").addEventListener("click", resetFills);
 
-    // Init
     setStatus();
   </script>
 </body>
