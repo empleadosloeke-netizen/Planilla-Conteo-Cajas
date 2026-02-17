@@ -334,3 +334,4 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
   setStatus();
 })();
 
+
