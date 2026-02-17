@@ -3,7 +3,7 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
  * LOGICA DE LA APP (ENVIO UNICO AL FINAL)
  ***********************/
 (function(){
-  const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfh9xaVqS-POGY1lB4WJmn_MWhRkoEN1YL8g3SQ6dezMJoMcGGXEjtvs5xghHZM41U/exec";
+  const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdWP__nIbto7po9xOmSToAsb6PIyiqbxDZ1etmpejKrE7gwnz4asVEcVsmgumzHiE4/exec";
   const MAP = (window.PLANIMETRIA_MAP || {});
   const $ = (id) => document.getElementById(id);
 
@@ -333,3 +333,4 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
   // init
   setStatus();
 })();
+
