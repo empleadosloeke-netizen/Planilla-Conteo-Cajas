@@ -142,7 +142,7 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
 
       const tdP = document.createElement("td");
       tdP.className = "compact";
-      const selP = buildSelect(1, 30, STATE.fills[key].pilas);
+      const selP = buildSelect(1, 50, STATE.fills[key].pilas);
 
       const tdCxp = document.createElement("td");
       tdCxp.className = "compact";
@@ -392,5 +392,6 @@ window.PLANIMETRIA_MAP={"502":[{"orden":1,"sector":"A01","codArt":"502"},{"orden
   // init
   setStatus();
 })();
+
 
 
